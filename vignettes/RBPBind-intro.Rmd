@@ -90,12 +90,7 @@ please refer to:
 # Setup
 
 ```{r load-packages}
-# Load package (use load_all for development, library for installed)
-if (requireNamespace("RBPBind", quietly = TRUE)) {
-  library(RBPBind)
-} else {
-  devtools::load_all()
-}
+library(RBPBind)
 library(data.table)
 library(ggplot2)
 ```

@@ -20,7 +20,6 @@ Imports:
     data.table,
     ggplot2,
     jsonlite,
-    methods,
     parallel,
     pracma,
     S4Vectors,

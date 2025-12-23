@@ -413,8 +413,8 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
 #' @param scale_factor Scaling factor for bubble size (default 0.4).
 #' @param colors Named vector of colors for the RBPs.
 #' @param legend_breaks Numeric vector of values to show in size legend.
-#'                      If NULL, shows 25%, 50%, 75%, 100% of max value.
-#' @return ggplot object.
+#'   If NULL, shows quartile breakpoints of max value.
+#' @return A ggplot object.
 #' @export
 plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL, 
                         protein_conc = NULL,

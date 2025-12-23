@@ -41,8 +41,16 @@ Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025).
 Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.
 bioRxiv. \url{https://www.biorxiv.org/content/10.1101/2025.03.28.646018v2}
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/S00NYI/RBPBind}
+  \item Report bugs at \url{https://github.com/S00NYI/RBPBind/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Soon Yi \email{cu.soonyi@gmail.com}
+\strong{Maintainer}: Soon Yi \email{cu.soonyi@gmail.com} (\href{https://orcid.org/0000-0002-4535-6532}{ORCID})
 
 }
 \keyword{internal}

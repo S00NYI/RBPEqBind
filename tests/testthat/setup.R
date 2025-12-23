@@ -1,8 +1,5 @@
 # Setup file for testthat
-# Loads the package before running tests
+# The package is already loaded by testthat infrastructure
 
 library(data.table)
 library(ggplot2)
-
-# Load all package functions
-devtools::load_all()

@@ -29,7 +29,13 @@
 #' For the original Python implementation of RNA-RBP interaction simulations,
 #' see \url{https://github.com/S00NYI/Specificity_BITs}.
 #'
+#' @importFrom stats setNames
+#' @importFrom utils head
+#' @importFrom data.table copy setkeyv setnames rleid first last
+#' @importFrom pracma fsolve
+#' 
 #' @docType package
 #' @name RBPBind
 #' @keywords internal
 "_PACKAGE"
+

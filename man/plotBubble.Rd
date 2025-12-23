@@ -38,10 +38,10 @@ e.g., c(HH=100, HL=100) to fix HH and HL at 100nM while varying rbp_x and rbp_y.
 \item{colors}{Named vector of colors for the RBPs.}
 
 \item{legend_breaks}{Numeric vector of values to show in size legend.
-If NULL, shows 25%, 50%, 75%, 100% of max value.}
+If NULL, shows quartile breakpoints of max value.}
 }
 \value{
-ggplot object.
+A ggplot object.
 }
 \description{
 Visualizes competitive binding between two RBPs using split-dot bubbles.
