@@ -30,11 +30,19 @@ plotHeatmap(
 
 \item{window}{Optional integer for K-mer sliding window average.}
 
-\item{zlim}{Optional numeric vector of length 2 for color scale limits (min, max).}
+\item{zlim}{Optional numeric vector for color scale limits.}
 }
 \value{
-ggplot object.
+A ggplot object.
 }
 \description{
-Plots a heatmap of binding for multiple RBPs using pre-calculated metrics.
+Plots a heatmap of binding for multiple RBPs.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file))
+results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+plotHeatmap(results, transcript = NULL)
+}
 }

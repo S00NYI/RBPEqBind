@@ -5,7 +5,13 @@
 #' @param results data.table of results.
 #' @param output_file Output file path.
 #' @param format "json" or "csv".
-#' @param include_sequence Logical, whether to include sequence in output (default TRUE).
+#' @param include_sequence Logical, include sequence in output (default TRUE).
+#' @return Invisibly returns NULL. Called for side effect of writing file.
+#' @examples
+#' \donttest{
+#' exportResults(results, "output.json", format = "json")
+#' exportResults(results, "output.csv", format = "csv")
+#' }
 #' @importFrom jsonlite stream_out toJSON
 #' @importFrom data.table fwrite
 #' @export
@@ -13,66 +19,25 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
   format <- match.arg(format)
   
   if (format == "json") {
-    # JSONL format recommended
-    # We want one line per transcript or sequence?
-    # results is a long data.table (per position).
-    # Group by sequence/transcript?
-    # Usually results have 'seq_name' or 'transcript'.
-    
     group_col <- if ("transcript" %in% names(results)) "transcript" else if ("seq_name" %in% names(results)) "seq_name" else NULL
     
     if (!is.null(group_col)) {
-      # Grouped export
-      # split by group is slow for large data.
-      # better to iterate?
-      # Or just dump the data.table as JSON array of objects?
-      # User spec:
-      # {"name":"tx001","length":200,"sequence":"...", "RBP1":[...], "RBP2":[...]}
-      # This requires restructuring!
-      
-      # We need to pivot/flatten the per-position data into arrays.
-      # This is expensive for huge data.
-      
-      # Helper to aggregates
-      # Get RBP columns
-      # non-id columns
-      exclude <- c("pos", "nt", group_col, "rna_conc", grep("Conc_", names(results), value=TRUE)) # Adjust as needed
+      exclude <- c("pos", "nt", group_col, "rna_conc", grep("Conc_", names(results), value = TRUE))
       rbp_cols <- setdiff(names(results), exclude)
-      
-      # Efficient approach:
-      # Iterate unique transcripts
-      # But iterating 100k transcripts in R is slow.
-      # data.table grouping?
-      
-      # results[, .(RBP1 = list(RBP1), RBP2 = list(RBP2)), by = group_col]
-      # This creates list columns.
-      # Then toJSON.
-      
       aggregated <- results[, lapply(.SD, function(x) list(x)), by = group_col, .SDcols = rbp_cols]
       
-      # Add sequence if available?
-      # We assume sequence is not in results data.table per pos (inefficient).
-      # If 'nt' column exists, we can reconstruct sequence
       if (include_sequence && "nt" %in% names(results)) {
-        seqs <- results[, .(sequence = paste(nt, collapse="")), by = group_col]
+        seqs <- results[, .(sequence = paste(nt, collapse = "")), by = group_col]
         aggregated <- merge(aggregated, seqs, by = group_col)
       }
       
-      # Add length
       lens <- results[, .(length = .N), by = group_col]
       aggregated <- merge(aggregated, lens, by = group_col)
-      
-      # Rename group col to 'name'?
       setnames(aggregated, group_col, "name")
-      
-      # Write JSONL
       jsonlite::stream_out(aggregated, file(output_file), verbose = FALSE)
-      
     } else {
-      # No group, just dump
       jsonlite::write_json(results, output_file)
     }
-    
   } else if (format == "csv") {
     data.table::fwrite(results, output_file)
   }
@@ -86,6 +51,11 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
 #' @param output_file File path.
 #' @param rbp RBP name to export.
 #' @param threshold Threshold for score/occupancy.
+#' @return Invisibly returns NULL. Called for side effect of writing BED file.
+#' @examples
+#' \donttest{
+#' exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
+#' }
 #' @export
 exportBed <- function(results, output_file, rbp, threshold = 0) {
   # Need pos, transcript/seq_name
@@ -137,6 +107,10 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
 #'
 #' @param input_file Path to JSON file (exported by exportResults).
 #' @return A data.table with the imported results.
+#' @examples
+#' \donttest{
+#' results <- importResults("output.json")
+#' }
 #' @importFrom jsonlite stream_in fromJSON
 #' @importFrom data.table as.data.table rbindlist
 #' @export
@@ -200,15 +174,18 @@ importResults <- function(input_file) {
 
 #' Create SummarizedExperiment from Results
 #'
-#' Converts simulation results to a SummarizedExperiment object with
-#' occupancy, density, and fold-change assays.
+#' Converts simulation results to a SummarizedExperiment object.
 #'
 #' @param results data.table from simulateBinding or simulateBindingF.
 #' @param rbp_models Optional named list of RBP models (for colData metadata).
-#' @return A SummarizedExperiment object with:
-#'   - assays: occupancy, density, density_fc, occupancy_fc (each n_pos × n_rbp)
-#'   - rowData: pos, nt, transcript
-#'   - colData: RBP name, Kd_min, Kd_max
+#' @return A SummarizedExperiment with assays and row/col metadata.
+#' @examples
+#' \donttest{
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' se <- makeSE(results, rbp_models)
+#' }
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom S4Vectors DataFrame
 #' @export

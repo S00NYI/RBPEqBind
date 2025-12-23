@@ -9,7 +9,7 @@ simulateBinding(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5)
 \arguments{
 \item{sequence}{RNA sequence string.}
 
-\item{rbp_models}{Named list of data.frames/data.tables. Each must have 'motif' and 'Kd' columns. The names of the list must match names in protein_concs.}
+\item{rbp_models}{Named list of data.frames/data.tables with 'motif' and 'Kd'.}
 
 \item{protein_concs}{Named numeric vector of total protein concentrations.}
 
@@ -22,4 +22,15 @@ A data.table containing per-position binding probabilities/occupancies.
 }
 \description{
 Simulates competitive binding of multiple RBPs to a single RNA sequence.
+}
+\examples{
+# Load and process model
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+raw_models <- loadModel(model_file, rbp = c("HH", "HL"))
+rbp_models <- setModel(raw_models, max_affinity = 100)
+
+# Simulate binding on a short sequence
+seq <- "ACGUACGUACGUACGUACGU"
+results <- simulateBinding(seq, rbp_models, c(HH = 100, HL = 100), rna_conc = 10)
+head(results)
 }

@@ -19,3 +19,7 @@ Vector of bound concentrations for each RBP.
 \description{
 Calculates the equilibrium bound concentrations for each RBP.
 }
+\examples{
+free_rna <- solveEquilibrium(10, c(100, 100), c(10, 50))
+calcBoundProtein(free_rna, c(100, 100), c(10, 50))
+}

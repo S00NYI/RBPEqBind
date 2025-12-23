@@ -2,7 +2,7 @@
 % Please edit documentation in R/data_loading.R
 \name{setModel}
 \alias{setModel}
-\title{Set Model Affinity (Score → Kd Conversion)}
+\title{Set Model Affinity (Score to Kd Conversion)}
 \usage{
 setModel(models, max_affinity = 100, min_affinity = 1e-05)
 }
@@ -19,4 +19,13 @@ A named list of data.tables, each with 'motif' and 'Kd' columns.
 \description{
 Converts a model's normalized scores to Kd values using affinity scaling.
 Score is assumed to be proportional to affinity (Ka), so Kd = 1/Ka.
+}
+\examples{
+# Load and process model
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+raw_models <- loadModel(model_file)
+rbp_models <- setModel(raw_models, max_affinity = 100)
+
+# Check Kd values
+head(rbp_models[[1]])
 }

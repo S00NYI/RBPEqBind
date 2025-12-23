@@ -19,3 +19,6 @@ Scaled numeric vector.
 \description{
 Scales a numeric vector to a given range [MIN, MAX].
 }
+\examples{
+featureScale(1:10, MAX = 100, MIN = 1)
+}

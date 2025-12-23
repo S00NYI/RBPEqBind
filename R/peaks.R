@@ -5,11 +5,15 @@
 #' @param results data.table of simulation results.
 #' @param rbp_primary Name of the primary RBP.
 #' @param rbp_reference Name of the reference RBP (for competitive advantage).
-#' @param method Method to use: "competitive", "local", "global".
-#' @param threshold Numerical threshold (ratio for competitive, occupancy for others).
+#' @param method Method: "competitive", "local", or "global".
+#' @param threshold Threshold (ratio for competitive, occupancy for others).
 #' @param min_width Minimum width of peak to report.
 #' @param window_size Window size for local background (default 50).
-#' @return data.table of peaks (chrom, start, end, name, score).
+#' @return A data.table of peaks with start, end, scores.
+#' @examples
+#' \donttest{
+#' peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.5)
+#' }
 #' @importFrom data.table frollmean
 #' @export
 callPeaks <- function(results, rbp_primary, rbp_reference = NULL, 

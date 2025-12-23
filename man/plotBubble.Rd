@@ -28,8 +28,7 @@ plotBubble(
 
 \item{rna_conc}{RNA concentration to filter.}
 
-\item{protein_conc}{Named numeric vector to filter other protein concentrations.
-e.g., c(HH=100, HL=100) to fix HH and HL at 100nM while varying rbp_x and rbp_y.}
+\item{protein_conc}{Named numeric vector to filter other protein concentrations.}
 
 \item{metric}{"occupancy", "density", "density_fc", or "occupancy_fc".}
 
@@ -37,14 +36,17 @@ e.g., c(HH=100, HL=100) to fix HH and HL at 100nM while varying rbp_x and rbp_y.
 
 \item{colors}{Named vector of colors for the RBPs.}
 
-\item{legend_breaks}{Numeric vector of values to show in size legend.
-If NULL, shows quartile breakpoints of max value.}
+\item{legend_breaks}{Numeric vector of values to show in size legend.}
 }
 \value{
 A ggplot object.
 }
 \description{
 Visualizes competitive binding between two RBPs using split-dot bubbles.
-Each grid point is a dot split diagonally, with one side (RBP X) and 
-the other side (RBP Y) sized by their respective metric values.
+}
+\examples{
+\donttest{
+# See vignette for bubble plot example
+plotBubble(grid_results, rbp_x = "HH", rbp_y = "HL", roi_range = c(1, 20))
+}
 }

@@ -15,3 +15,7 @@ data.table with columns 'motif' and 'count'.
 \description{
 Returns a data.table with unique k-mers and their counts.
 }
+\examples{
+kmers <- extractKmers("ACGUACGU", k = 3)
+countKmers(kmers)
+}

@@ -30,8 +30,16 @@ simulateBindingF(
 \item{n_cores}{Integer number of cores.}
 }
 \value{
-A data.table with combined results, including `transcript` column.
+A data.table with combined results, including transcript column.
 }
 \description{
-Simulates binding for all sequences in a FASTA file with fixed concentrations.
+Simulates binding for all sequences in a FASTA file.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBindingF(fasta_file, rbp_models, c(HH = 100, HL = 100))
+}
 }

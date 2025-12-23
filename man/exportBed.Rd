@@ -15,6 +15,14 @@ exportBed(results, output_file, rbp, threshold = 0)
 
 \item{threshold}{Threshold for score/occupancy.}
 }
+\value{
+Invisibly returns NULL. Called for side effect of writing BED file.
+}
 \description{
 Simple BED export for ranges exceeding threshold.
+}
+\examples{
+\donttest{
+exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
+}
 }

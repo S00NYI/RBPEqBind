@@ -21,17 +21,22 @@ callPeaks(
 
 \item{rbp_reference}{Name of the reference RBP (for competitive advantage).}
 
-\item{method}{Method to use: "competitive", "local", "global".}
+\item{method}{Method: "competitive", "local", or "global".}
 
-\item{threshold}{Numerical threshold (ratio for competitive, occupancy for others).}
+\item{threshold}{Threshold (ratio for competitive, occupancy for others).}
 
 \item{min_width}{Minimum width of peak to report.}
 
 \item{window_size}{Window size for local background (default 50).}
 }
 \value{
-data.table of peaks (chrom, start, end, name, score).
+A data.table of peaks with start, end, scores.
 }
 \description{
 Identifies peak regions based on binding occupancy.
+}
+\examples{
+\donttest{
+peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.5)
+}
 }

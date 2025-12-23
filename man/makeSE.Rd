@@ -12,12 +12,16 @@ makeSE(results, rbp_models = NULL)
 \item{rbp_models}{Optional named list of RBP models (for colData metadata).}
 }
 \value{
-A SummarizedExperiment object with:
-  - assays: occupancy, density, density_fc, occupancy_fc (each n_pos × n_rbp)
-  - rowData: pos, nt, transcript
-  - colData: RBP name, Kd_min, Kd_max
+A SummarizedExperiment with assays and row/col metadata.
 }
 \description{
-Converts simulation results to a SummarizedExperiment object with
-occupancy, density, and fold-change assays.
+Converts simulation results to a SummarizedExperiment object.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+se <- makeSE(results, rbp_models)
+}
 }

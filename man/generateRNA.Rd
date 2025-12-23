@@ -23,3 +23,7 @@ A character string representing the RNA sequence.
 \description{
 Generates a random RNA sequence with specified nucleotide frequencies.
 }
+\examples{
+set.seed(42)
+generateRNA(100)
+}

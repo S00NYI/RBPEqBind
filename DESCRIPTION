@@ -10,11 +10,12 @@ Description: Simulates competitive binding of N RBPs to RNA sequences using
     grids, and transcriptome-wide analysis. Designed for Bioconductor.
 License: GPL-3
 Encoding: UTF-8
-biocViews: RNABinding, Simulation, Transcriptomics, Visualization
+biocViews: MathematicalBiology, SystemsBiology, FunctionalGenomics, 
+    Transcriptomics, GeneRegulation, Visualization
 BugReports: https://github.com/S00NYI/RBPBind/issues
 URL: https://github.com/S00NYI/RBPBind
 Depends: 
-    R (>= 4.3.0)
+    R (>= 4.5.0)
 Imports: 
     Biostrings,
     data.table,

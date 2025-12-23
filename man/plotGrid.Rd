@@ -27,8 +27,14 @@ plotGrid(
 \item{rbp1_concs}{Optional vector of RBP1 concentrations to include.}
 }
 \value{
-ggplot object.
+A ggplot object.
 }
 \description{
-Visualizes binding across a concentration grid using pre-calculated metrics.
+Visualizes binding across a concentration grid.
+}
+\examples{
+\donttest{
+# See vignette for full grid simulation example
+plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
+}
 }

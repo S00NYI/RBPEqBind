@@ -18,8 +18,17 @@ exportResults(
 
 \item{format}{"json" or "csv".}
 
-\item{include_sequence}{Logical, whether to include sequence in output (default TRUE).}
+\item{include_sequence}{Logical, include sequence in output (default TRUE).}
+}
+\value{
+Invisibly returns NULL. Called for side effect of writing file.
 }
 \description{
 Exports simulation results to JSON or CSV.
+}
+\examples{
+\donttest{
+exportResults(results, "output.json", format = "json")
+exportResults(results, "output.csv", format = "csv")
+}
 }

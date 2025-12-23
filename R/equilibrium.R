@@ -6,6 +6,14 @@
 #' @param protein_totals Vector of total protein concentrations for N RBPs (numeric vector).
 #' @param Kds Vector of dissociation constants (Kd) for N RBPs (numeric vector).
 #' @return The equilibrium free RNA concentration.
+#' @examples
+#' # Two RBPs competing for RNA
+#' free_rna <- solveEquilibrium(
+#'   RNA_total = 10,
+#'   protein_totals = c(100, 100),
+#'   Kds = c(10, 50)
+#' )
+#' free_rna
 #' @export
 solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
   # Input validation
@@ -50,6 +58,9 @@ solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
 #' @param protein_totals Vector of total protein concentrations.
 #' @param Kds Vector of dissociation constants.
 #' @return Vector of bound concentrations for each RBP.
+#' @examples
+#' free_rna <- solveEquilibrium(10, c(100, 100), c(10, 50))
+#' calcBoundProtein(free_rna, c(100, 100), c(10, 50))
 #' @export
 calcBoundProtein <- function(free_RNA, protein_totals, Kds) {
   return((protein_totals * free_RNA) / (Kds + free_RNA))

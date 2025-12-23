@@ -19,3 +19,12 @@ The equilibrium free RNA concentration.
 \description{
 Solves for the free RNA concentration in a competitive binding system.
 }
+\examples{
+# Two RBPs competing for RNA
+free_rna <- solveEquilibrium(
+  RNA_total = 10,
+  protein_totals = c(100, 100),
+  Kds = c(10, 50)
+)
+free_rna
+}

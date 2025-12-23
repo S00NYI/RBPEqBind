@@ -11,9 +11,15 @@
 #' @param xaxis_type Type of x-axis labels: "nucleotide", "position", or "both".
 #' @param rna_conc Optional numeric. Filter by RNA concentration.
 #' @param protein_conc Optional named numeric vector. Filter by protein concentration.
-#' @param window Optional integer. If provided, applies a K-mer sliding window average.
-#'               X-axis shows K-mer motifs (e.g., UAGCG, AGCGG) with 45-degree angle.
-#' @return ggplot object.
+#' @param window Optional integer. Applies K-mer sliding window average.
+#' @return A ggplot object.
+#' @examples
+#' \donttest{
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' plotBinding(results, rbp = c("HH", "HL"))
+#' }
 #' @export
 plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy", "density", "density_fc", "occupancy_fc"), 
                          ylim = NULL, xlim = NULL, xaxis_type = c("nucleotide", "position", "both"),
@@ -174,17 +180,24 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
 
 #' Plot Binding Heatmap
 #'
-#' Plots a heatmap of binding for multiple RBPs using pre-calculated metrics.
+#' Plots a heatmap of binding for multiple RBPs.
 #'
 #' @param results data.table of simulation results.
 #' @param rbps Optional vector of RBP names.
 #' @param transcript Transcript name to filter.
 #' @param metric Type of metric: "occupancy", "density", "density_fc", or "occupancy_fc".
-#' @param zlim Optional numeric vector of length 2 for color scale limits (min, max).
+#' @param zlim Optional numeric vector for color scale limits.
 #' @param xlim Optional x-axis limits.
 #' @param xaxis_type Type of x-axis labels: "nucleotide", "position", or "both".
 #' @param window Optional integer for K-mer sliding window average.
-#' @return ggplot object.
+#' @return A ggplot object.
+#' @examples
+#' \donttest{
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' rbp_models <- setModel(loadModel(model_file))
+#' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' plotHeatmap(results, transcript = NULL)
+#' }
 #' @export
 plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL, 
                          xaxis_type = c("nucleotide", "position", "both"),
@@ -293,7 +306,7 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
 
 #' Plot Competition Grid
 #'
-#' Visualizes binding across a concentration grid using pre-calculated metrics.
+#' Visualizes binding across a concentration grid.
 #'
 #' @param results data.table from simulateGrid.
 #' @param rbp1 Name of first RBP (subdivides each cell).
@@ -301,7 +314,12 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
 #' @param rbp1_concs Optional vector of RBP1 concentrations to include.
 #' @param roi_range Numeric vector (start, end) for region of interest.
 #' @param metric "occupancy", "density", "density_fc", or "occupancy_fc".
-#' @return ggplot object.
+#' @return A ggplot object.
+#' @examples
+#' \donttest{
+#' # See vignette for full grid simulation example
+#' plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
+#' }
 #' @export
 plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "density", "density_fc", "occupancy_fc"),
                       rbp1_concs = NULL) {
@@ -399,8 +417,6 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
 #' Plot Competition Bubble (Split-Dot)
 #'
 #' Visualizes competitive binding between two RBPs using split-dot bubbles.
-#' Each grid point is a dot split diagonally, with one side (RBP X) and 
-#' the other side (RBP Y) sized by their respective metric values.
 #'
 #' @param results data.table from simulateGrid.
 #' @param rbp_x Name of first RBP (one half of split dot).
@@ -408,13 +424,16 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
 #' @param roi_range Numeric vector (start, end) for region of interest.
 #' @param rna_conc RNA concentration to filter.
 #' @param protein_conc Named numeric vector to filter other protein concentrations.
-#'                     e.g., c(HH=100, HL=100) to fix HH and HL at 100nM while varying rbp_x and rbp_y.
 #' @param metric "occupancy", "density", "density_fc", or "occupancy_fc".
 #' @param scale_factor Scaling factor for bubble size (default 0.4).
 #' @param colors Named vector of colors for the RBPs.
 #' @param legend_breaks Numeric vector of values to show in size legend.
-#'   If NULL, shows quartile breakpoints of max value.
 #' @return A ggplot object.
+#' @examples
+#' \donttest{
+#' # See vignette for bubble plot example
+#' plotBubble(grid_results, rbp_x = "HH", rbp_y = "HL", roi_range = c(1, 20))
+#' }
 #' @export
 plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL, 
                         protein_conc = NULL,
@@ -663,12 +682,18 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
 #'
 #' @param rbp_models Named list of RBP model data.tables (from setModel).
 #' @param rbp Character vector of RBP names to plot. If NULL, plots all.
-#' @param metric Display metric: "Kd" (dissociation constant) or "Ka" (affinity = 1/Kd).
+#' @param metric Display metric: "Kd" or "Ka" (affinity = 1/Kd).
 #' @param bins Number of histogram bins (default 50).
 #' @param colors Named vector of colors per RBP. If NULL, uses default palette.
 #' @param alpha Transparency of histogram bars (default 0.5).
 #' @param log_scale Logical, use log10 scale for x-axis (default FALSE).
-#' @return ggplot object.
+#' @return A ggplot object.
+#' @examples
+#' \donttest{
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' rbp_models <- setModel(loadModel(model_file))
+#' viewModel(rbp_models, metric = "Kd")
+#' }
 #' @export
 viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
                          bins = 50, colors = NULL, alpha = 0.5, log_scale = FALSE) {

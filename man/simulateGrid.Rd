@@ -19,7 +19,7 @@ simulateGrid(
 
 \item{rbp_models}{Named list of RBP models.}
 
-\item{protein_conc_grid}{List of numeric vectors for each RBP concentration to sweep.}
+\item{protein_conc_grid}{List of numeric vectors for each RBP concentration.}
 
 \item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
 
@@ -27,11 +27,20 @@ simulateGrid(
 
 \item{parallel}{Logical, whether to use parallel processing.}
 
-\item{n_cores}{Integer number of cores. Defaults to detectCores() - 1.}
+\item{n_cores}{Integer number of cores.}
 }
 \value{
 A data.table with results for all grid combinations.
 }
 \description{
-Runs simulations across a grid of protein and RNA concentrations for a single sequence.
+Runs simulations across a grid of protein/RNA concentrations.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+grid <- simulateGrid("ACGUACGU", rbp_models,
+  protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
+  rna_conc_grid = 10, parallel = FALSE)
+}
 }

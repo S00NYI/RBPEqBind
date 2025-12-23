@@ -20,3 +20,12 @@ A named list of data.tables, each with 'motif' and 'score' columns.
 Reads a CSV file containing RBP binding affinities/scores.
 The file should have a 'Motif' column and one or more RBP score columns.
 }
+\examples{
+# Load sample model from package
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+raw_models <- loadModel(model_file)
+names(raw_models)
+
+# Load specific RBPs
+raw_models <- loadModel(model_file, rbp = c("HH", "HL"))
+}

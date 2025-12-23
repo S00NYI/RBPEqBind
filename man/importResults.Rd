@@ -15,3 +15,8 @@ A data.table with the imported results.
 \description{
 Reads previously exported simulation results from a JSON file.
 }
+\examples{
+\donttest{
+results <- importResults("output.json")
+}
+}

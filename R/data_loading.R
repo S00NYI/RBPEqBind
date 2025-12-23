@@ -7,6 +7,14 @@
 #' @param k Optional integer. If provided, filters for k-mers of this length.
 #' @param rbp Optional character vector of RBP names to load. If NULL, loads all.
 #' @return A named list of data.tables, each with 'motif' and 'score' columns.
+#' @examples
+#' # Load sample model from package
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' raw_models <- loadModel(model_file)
+#' names(raw_models)
+#'
+#' # Load specific RBPs
+#' raw_models <- loadModel(model_file, rbp = c("HH", "HL"))
 #' @importFrom data.table fread
 #' @export
 loadModel <- function(file, k = NULL, rbp = NULL) {
@@ -60,7 +68,7 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
 }
 
 
-#' Set Model Affinity (Score → Kd Conversion)
+#' Set Model Affinity (Score to Kd Conversion)
 #'
 #' Converts a model's normalized scores to Kd values using affinity scaling.
 #' Score is assumed to be proportional to affinity (Ka), so Kd = 1/Ka.
@@ -69,6 +77,14 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
 #' @param max_affinity Named numeric vector of max Ka per RBP, or single default (100).
 #' @param min_affinity Named numeric vector of min Ka per RBP, or single default (0.00001).
 #' @return A named list of data.tables, each with 'motif' and 'Kd' columns.
+#' @examples
+#' # Load and process model
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' raw_models <- loadModel(model_file)
+#' rbp_models <- setModel(raw_models, max_affinity = 100)
+#' 
+#' # Check Kd values
+#' head(rbp_models[[1]])
 #' @export
 setModel <- function(models, max_affinity = 100, min_affinity = 0.00001) {
   

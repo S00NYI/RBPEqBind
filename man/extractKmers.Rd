@@ -17,3 +17,6 @@ Character vector of k-mers.
 \description{
 Generates a vector of all k-mers from a given sequence using a sliding window.
 }
+\examples{
+extractKmers("ACGUACGU", k = 3)
+}

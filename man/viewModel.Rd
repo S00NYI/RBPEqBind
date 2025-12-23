@@ -19,7 +19,7 @@ viewModel(
 
 \item{rbp}{Character vector of RBP names to plot. If NULL, plots all.}
 
-\item{metric}{Display metric: "Kd" (dissociation constant) or "Ka" (affinity = 1/Kd).}
+\item{metric}{Display metric: "Kd" or "Ka" (affinity = 1/Kd).}
 
 \item{bins}{Number of histogram bins (default 50).}
 
@@ -30,8 +30,15 @@ viewModel(
 \item{log_scale}{Logical, use log10 scale for x-axis (default FALSE).}
 }
 \value{
-ggplot object.
+A ggplot object.
 }
 \description{
 Creates a histogram of Kd or Ka distributions for RBP models.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file))
+viewModel(rbp_models, metric = "Kd")
+}
 }

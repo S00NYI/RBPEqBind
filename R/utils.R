@@ -6,6 +6,8 @@
 #' @param MAX Maximum value of the new range.
 #' @param MIN Minimum value of the new range.
 #' @return Scaled numeric vector.
+#' @examples
+#' featureScale(1:10, MAX = 100, MIN = 1)
 #' @export
 featureScale <- function(X, MAX, MIN) {
   if (MAX <= MIN) {
@@ -29,6 +31,9 @@ featureScale <- function(X, MAX, MIN) {
 #' @param C Frequency of Cytosine.
 #' @param U Frequency of Uracil.
 #' @return A character string representing the RNA sequence.
+#' @examples
+#' set.seed(42)
+#' generateRNA(100)
 #' @export
 generateRNA <- function(L, A = 0.25, G = 0.25, C = 0.25, U = 0.25) {
   if (abs(sum(c(A, G, C, U)) - 1) > 1e-9) {
@@ -54,6 +59,8 @@ generateRNA <- function(L, A = 0.25, G = 0.25, C = 0.25, U = 0.25) {
 #' @param sequence Character string of the RNA sequence.
 #' @param k Integer size of the k-mer (default 5).
 #' @return Character vector of k-mers.
+#' @examples
+#' extractKmers("ACGUACGU", k = 3)
 #' @export
 extractKmers <- function(sequence, k = 5) {
   if (nchar(sequence) < k) {
@@ -71,6 +78,9 @@ extractKmers <- function(sequence, k = 5) {
 #'
 #' @param kmers Character vector of k-mers.
 #' @return data.table with columns 'motif' and 'count'.
+#' @examples
+#' kmers <- extractKmers("ACGUACGU", k = 3)
+#' countKmers(kmers)
 #' @importFrom data.table data.table
 #' @export
 countKmers <- function(kmers) {

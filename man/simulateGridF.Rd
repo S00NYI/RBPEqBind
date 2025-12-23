@@ -30,8 +30,13 @@ simulateGridF(
 \item{n_cores}{Integer number of cores.}
 }
 \value{
-A data.table with combined results, including `transcript` column.
+A data.table with combined results, including transcript column.
 }
 \description{
 Simulates binding for all sequences in a FASTA file across a concentration grid.
+}
+\examples{
+\donttest{
+# See vignette for full FASTA grid example
+}
 }

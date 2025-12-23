@@ -36,12 +36,19 @@ plotBinding(
 
 \item{protein_conc}{Optional named numeric vector. Filter by protein concentration.}
 
-\item{window}{Optional integer. If provided, applies a K-mer sliding window average.
-X-axis shows K-mer motifs (e.g., UAGCG, AGCGG) with 45-degree angle.}
+\item{window}{Optional integer. Applies K-mer sliding window average.}
 }
 \value{
-ggplot object.
+A ggplot object.
 }
 \description{
 Plots the binding profile for one or more RBPs.
+}
+\examples{
+\donttest{
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+plotBinding(results, rbp = c("HH", "HL"))
+}
 }
