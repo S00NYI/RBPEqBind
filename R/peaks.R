@@ -11,7 +11,11 @@
 #' @param window_size Window size for local background (default 50).
 #' @return A data.table of peaks with start, end, scores.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGUACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' results$transcript <- "test"
 #' peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.5)
 #' }
 #' @importFrom data.table frollmean

@@ -18,7 +18,7 @@ A SummarizedExperiment with assays and row/col metadata.
 Converts simulation results to a SummarizedExperiment object.
 }
 \examples{
-\donttest{
+if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))

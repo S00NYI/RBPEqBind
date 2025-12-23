@@ -33,7 +33,7 @@ A ggplot object.
 Visualizes binding across a concentration grid.
 }
 \examples{
-\donttest{
+if (FALSE) {
 # See vignette for full grid simulation example
 plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
 }

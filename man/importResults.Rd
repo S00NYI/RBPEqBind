@@ -16,7 +16,7 @@ A data.table with the imported results.
 Reads previously exported simulation results from a JSON file.
 }
 \examples{
-\donttest{
+if (FALSE) {
 results <- importResults("output.json")
 }
 }

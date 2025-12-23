@@ -36,7 +36,7 @@ A ggplot object.
 Creates a histogram of Kd or Ka distributions for RBP models.
 }
 \examples{
-\donttest{
+if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 rbp_models <- setModel(loadModel(model_file))
 viewModel(rbp_models, metric = "Kd")

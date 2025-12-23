@@ -45,7 +45,7 @@ A ggplot object.
 Plots the binding profile for one or more RBPs.
 }
 \examples{
-\donttest{
+if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))

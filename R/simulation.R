@@ -32,7 +32,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 
   kmers <- extractKmers(sequence, k)
   if (length(kmers) == 0) {
-    warning(paste("No k-mers found for sequence length", nchar(sequence), "k =", k))
+    warning("No k-mers found for sequence length ", nchar(sequence), " k = ", k)
     return(NULL)
   }
   
@@ -47,13 +47,13 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
   for (rbp in rbp_names) {
     model <- rbp_models[[rbp]]
     if (!is.data.frame(model) || !all(c("motif", "Kd") %in% colnames(model))) {
-      stop(paste("Model for", rbp, "must be a dataframe with 'motif' and 'Kd' columns"))
+      stop("Model for ", rbp, " must be a dataframe with 'motif' and 'Kd' columns")
     }
 
     match_idx <- match(binding_params$motif, model$motif)
     if (any(is.na(match_idx))) {
       missing <- head(binding_params$motif[is.na(match_idx)])
-      warning(paste("Some motifs in sequence not found in model for", rbp, ":", paste(missing, collapse=","), "... using Inf Kd (no binding)"))
+      warning("Some motifs in sequence not found in model for ", rbp, ": ", paste(missing, collapse=","), "... using Inf Kd (no binding)")
       kds <- rep(Inf, nrow(binding_params))
       kds[!is.na(match_idx)] <- model$Kd[match_idx[!is.na(match_idx)]]
     } else {
@@ -101,21 +101,21 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
   
   # Use cumsum trick for efficient position mapping
   diff_mat <- matrix(0, nrow = L + 1, ncol = n_rbps)
-  diff_mat[1:W, ] <- diff_mat[1:W, ] + window_occupancy
+  diff_mat[seq_len(W), ] <- diff_mat[seq_len(W), ] + window_occupancy
   diff_mat[(k + 1):(L + 1), ] <- diff_mat[(k + 1):(L + 1), ] - window_occupancy
-  pos_sums <- apply(diff_mat, 2, cumsum)[1:L, , drop = FALSE]
+  pos_sums <- apply(diff_mat, 2, cumsum)[seq_len(L), , drop = FALSE]
   
   count_diff <- numeric(L + 1)
-  count_diff[1:W] <- count_diff[1:W] + 1
+  count_diff[seq_len(W)] <- count_diff[seq_len(W)] + 1
   count_diff[(k + 1):(L + 1)] <- count_diff[(k + 1):(L + 1)] - 1
-  pos_counts <- cumsum(count_diff)[1:L]
+  pos_counts <- cumsum(count_diff)[seq_len(L)]
   pos_counts[pos_counts == 0] <- 1
   
   final_mat <- pos_sums / pos_counts
   seq_chars <- strsplit(sequence, "")[[1]]
   
   res <- data.table::data.table(
-    pos = 1:L,
+    pos = seq_len(L),
     nt = seq_chars
   )
   
@@ -184,7 +184,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' @param n_cores Integer number of cores.
 #' @return A data.table with results for all grid combinations.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' grid <- simulateGrid("ACGUACGU", rbp_models,
@@ -284,7 +284,7 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @param n_cores Integer number of cores.
 #' @return A data.table with combined results, including transcript column.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
@@ -323,7 +323,7 @@ simulateBindingF <- function(fasta_file, rbp_models, protein_concs, rna_conc = 1
     seq_str <- get_seq_str(i)
     res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k)
     if (is.null(res)) {
-      warning(paste("Simulation returned NULL for", seq_names[i]))
+      warning("Simulation returned NULL for ", seq_names[i])
       return(NULL)
     }
     res$transcript <- seq_names[i]
@@ -365,7 +365,7 @@ simulateBindingF <- function(fasta_file, rbp_models, protein_concs, rna_conc = 1
 #' @param n_cores Integer number of cores.
 #' @return A data.table with combined results, including transcript column.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' # See vignette for full FASTA grid example
 #' }
 #' @importFrom Biostrings readDNAStringSet

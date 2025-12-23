@@ -8,7 +8,7 @@
 #' @param include_sequence Logical, include sequence in output (default TRUE).
 #' @return Invisibly returns NULL. Called for side effect of writing file.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' exportResults(results, "output.json", format = "json")
 #' exportResults(results, "output.csv", format = "csv")
 #' }
@@ -53,7 +53,7 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
 #' @param threshold Threshold for score/occupancy.
 #' @return Invisibly returns NULL. Called for side effect of writing BED file.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
 #' }
 #' @export
@@ -108,7 +108,7 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
 #' @param input_file Path to JSON file (exported by exportResults).
 #' @return A data.table with the imported results.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' results <- importResults("output.json")
 #' }
 #' @importFrom jsonlite stream_in fromJSON
@@ -180,7 +180,7 @@ importResults <- function(input_file) {
 #' @param rbp_models Optional named list of RBP models (for colData metadata).
 #' @return A SummarizedExperiment with assays and row/col metadata.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))

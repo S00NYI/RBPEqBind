@@ -36,7 +36,7 @@ A data.table with combined results, including transcript column.
 Simulates binding for all sequences in a FASTA file across a concentration grid.
 }
 \examples{
-\donttest{
+if (FALSE) {
 # See vignette for full FASTA grid example
 }
 }

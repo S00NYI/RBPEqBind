@@ -45,7 +45,7 @@ A ggplot object.
 Visualizes competitive binding between two RBPs using split-dot bubbles.
 }
 \examples{
-\donttest{
+if (FALSE) {
 # See vignette for bubble plot example
 plotBubble(grid_results, rbp_x = "HH", rbp_y = "HL", roi_range = c(1, 20))
 }

@@ -4,7 +4,10 @@ Version: 0.99.0
 Authors@R: c(person("Soon", "Yi", 
                     email = "cu.soonyi@gmail.com", 
                     role = c("aut", "cre"),
-                    comment = c(ORCID = "0000-0002-4535-6532")))
+                    comment = c(ORCID = "0000-0002-4535-6532")),
+             person("National Institutes of Health", 
+                    role = "fnd", 
+                    comment = "T32 GM152319"))
 Description: Simulates competitive binding of N RBPs to RNA sequences using 
     an equilibrium binding model. Supports single sequences, concentration 
     grids, and transcriptome-wide analysis. Designed for Bioconductor.

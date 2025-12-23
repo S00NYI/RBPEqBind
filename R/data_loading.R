@@ -19,7 +19,7 @@
 #' @export
 loadModel <- function(file, k = NULL, rbp = NULL) {
   if (!file.exists(file)) {
-    stop(paste("File not found:", file))
+    stop("File not found: ", file)
   }
   
   dt <- data.table::fread(file)
@@ -41,7 +41,7 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
   if (!is.null(rbp)) {
     missing <- setdiff(rbp, all_rbps)
     if (length(missing) > 0) {
-      stop(paste("RBPs not found in file:", paste(missing, collapse = ", ")))
+      stop("RBPs not found in file: ", paste(missing, collapse = ", "))
     }
     all_rbps <- rbp
   }
@@ -50,7 +50,7 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
   if (!is.null(k)) {
     dt <- dt[nchar(get(motif_col)) == k]
     if (nrow(dt) == 0) {
-      warning(paste("No k-mers of length", k, "found in model file."))
+      warning("No k-mers of length ", k, " found in model file.")
       return(list())
     }
   }
@@ -103,7 +103,7 @@ setModel <- function(models, max_affinity = 100, min_affinity = 0.00001) {
     model <- models[[name]]
     
     if (!all(c("motif", "score") %in% names(model))) {
-      stop(paste("Model", name, "must have 'motif' and 'score' columns."))
+      stop("Model ", name, " must have 'motif' and 'score' columns.")
     }
     
     dt <- data.table::copy(model)

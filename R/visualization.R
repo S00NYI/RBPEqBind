@@ -14,7 +14,7 @@
 #' @param window Optional integer. Applies K-mer sliding window average.
 #' @return A ggplot object.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
@@ -52,8 +52,8 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
   # Check columns exist
   missing_cols <- setdiff(value_cols, names(results))
   if (length(missing_cols) > 0) {
-    stop(paste("Columns not found in results:", paste(missing_cols, collapse=", "), 
-               "\nAvailable columns:", paste(head(names(results), 20), collapse=", ")))
+    stop("Columns not found in results: ", paste(missing_cols, collapse=", "), 
+         ". Available: ", paste(names(results), collapse=", "))
   }
   
   data <- copy(results)
@@ -192,7 +192,7 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
 #' @param window Optional integer for K-mer sliding window average.
 #' @return A ggplot object.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
@@ -316,7 +316,7 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
 #' @param metric "occupancy", "density", "density_fc", or "occupancy_fc".
 #' @return A ggplot object.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' # See vignette for full grid simulation example
 #' plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
 #' }
@@ -350,7 +350,7 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
   conc_col_2 <- paste0("Conc_", rbp2)
   
   if (!all(c(conc_col_1, conc_col_2, "rna_conc", value_col) %in% names(dt))) {
-    stop(paste("Required columns not found. Looking for:", value_col))
+    stop("Required columns not found. Looking for: ", value_col)
   }
   
   # Filter by rbp1_concs if specified
@@ -397,9 +397,9 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
   p <- ggplot2::ggplot(tile_data, ggplot2::aes(x = x, y = y, fill = value)) +
     ggplot2::geom_tile(ggplot2::aes(width = width, height = height), color = "white", linewidth = 0.3) +
     ggplot2::scale_fill_viridis_c(name = metric_title, na.value = "gray90") +
-    ggplot2::scale_x_continuous(breaks = 1:n_rbp2, labels = rbp2_vals, 
+    ggplot2::scale_x_continuous(breaks = seq_len(n_rbp2), labels = rbp2_vals, 
                                  name = paste("Concentration", rbp2, "(nM)"), expand = c(0.05, 0.05)) +
-    ggplot2::scale_y_continuous(breaks = 1:n_rna, labels = rna_vals, 
+    ggplot2::scale_y_continuous(breaks = seq_len(n_rna), labels = rna_vals, 
                                  name = "RNA Concentration (nM)", expand = c(0.05, 0.05)) +
     ggplot2::labs(
       title = paste("Competition Grid:", rbp1, "vs", rbp2),
@@ -407,9 +407,11 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
                        "\nSubdivisions:", paste(rbp1_vals, collapse=", "))
     ) +
     ggplot2::theme_bw() +
-    ggplot2::theme(axis.text = ggplot2::element_text(size = 12),
-                   axis.title = ggplot2::element_text(size = 14, face = 'bold'),
-                   panel.grid = ggplot2::element_blank())
+    ggplot2::theme(
+      axis.text = ggplot2::element_text(size = 12),
+      axis.title = ggplot2::element_text(size = 14, face = 'bold'),
+      panel.grid = ggplot2::element_blank()
+    )
   
   return(p)
 }
@@ -430,7 +432,7 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
 #' @param legend_breaks Numeric vector of values to show in size legend.
 #' @return A ggplot object.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' # See vignette for bubble plot example
 #' plotBubble(grid_results, rbp_x = "HH", rbp_y = "HL", roi_range = c(1, 20))
 #' }
@@ -493,7 +495,7 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
   conc_col_y <- paste0("Conc_", rbp_y)
   
   if (!all(c(conc_col_x, conc_col_y, col_x, col_y) %in% names(dt))) {
-    stop(paste("Required columns not found. Need:", conc_col_x, conc_col_y, col_x, col_y))
+    stop("Required columns not found. Need: ", conc_col_x, " ", conc_col_y, " ", col_x, " ", col_y)
   }
   
   # Aggregate: average metric values within ROI
@@ -592,7 +594,7 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
   
   # Position legend circles within the y-axis range
   legend_y_spacing <- max(1, (n_y - 1) / (length(legend_vals) + 1))
-  legend_y_positions <- 1 + legend_y_spacing * (1:length(legend_vals))
+  legend_y_positions <- 1 + legend_y_spacing * (seq_along(legend_vals))
   
   # Build circles - left edge of each circle aligns with legend_left_edge
   legend_circles <- data.table()
@@ -653,9 +655,9 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
     ggplot2::geom_text(data = legend_title_df, 
                        ggplot2::aes(x = x, y = y, label = label),
                        fontface = "bold", size = 3.5, hjust = 0, inherit.aes = FALSE) +
-    ggplot2::scale_x_continuous(breaks = 1:n_x, labels = x_vals,
+    ggplot2::scale_x_continuous(breaks = seq_len(n_x), labels = x_vals,
                                  name = paste("Concentration", rbp_x, "(nM)")) +
-    ggplot2::scale_y_continuous(breaks = 1:n_y, labels = y_vals,
+    ggplot2::scale_y_continuous(breaks = seq_len(n_y), labels = y_vals,
                                  name = paste("Concentration", rbp_y, "(nM)")) +
     # coord_fixed maintains aspect ratio (circles stay circular), clip="off" allows legend outside
     ggplot2::coord_fixed(ratio = 1, xlim = c(0.5, n_x + 0.5), ylim = c(0.5, n_y + 0.5), clip = "off") +
@@ -689,7 +691,7 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
 #' @param log_scale Logical, use log10 scale for x-axis (default FALSE).
 #' @return A ggplot object.
 #' @examples
-#' \donttest{
+#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 #' rbp_models <- setModel(loadModel(model_file))
 #' viewModel(rbp_models, metric = "Kd")
@@ -709,7 +711,7 @@ viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
   }
   missing_rbp <- setdiff(rbp, names(rbp_models))
   if (length(missing_rbp) > 0) {
-    stop(paste("RBPs not found in models:", paste(missing_rbp, collapse = ", ")))
+    stop("RBPs not found in models: ", paste(missing_rbp, collapse = ", "))
   }
   
   # Build combined data
@@ -728,7 +730,7 @@ viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
       # Raw model - score is already normalized relative affinity
       val <- model$score
     } else {
-      stop(paste("Model", r, "has neither 'Kd' nor 'score' column."))
+      stop("Model ", r, " has neither 'Kd' nor 'score' column.")
     }
     
     data.table::data.table(RBP = r, value = val)

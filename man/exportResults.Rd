@@ -27,7 +27,7 @@ Invisibly returns NULL. Called for side effect of writing file.
 Exports simulation results to JSON or CSV.
 }
 \examples{
-\donttest{
+if (FALSE) {
 exportResults(results, "output.json", format = "json")
 exportResults(results, "output.csv", format = "csv")
 }

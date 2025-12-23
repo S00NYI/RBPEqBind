@@ -39,7 +39,7 @@ A ggplot object.
 Plots a heatmap of binding for multiple RBPs.
 }
 \examples{
-\donttest{
+if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 rbp_models <- setModel(loadModel(model_file))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))

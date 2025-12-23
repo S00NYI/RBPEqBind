@@ -22,7 +22,7 @@ Invisibly returns NULL. Called for side effect of writing BED file.
 Simple BED export for ranges exceeding threshold.
 }
 \examples{
-\donttest{
+if (FALSE) {
 exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
 }
 }

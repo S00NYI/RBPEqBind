@@ -8,3 +8,4 @@
 ^data$
 ^legacy_files$
 ^\.DS_Store$
+^RBPBind\.BiocCheck$

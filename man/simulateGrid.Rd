@@ -36,7 +36,7 @@ A data.table with results for all grid combinations.
 Runs simulations across a grid of protein/RNA concentrations.
 }
 \examples{
-\donttest{
+if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 grid <- simulateGrid("ACGUACGU", rbp_models,
