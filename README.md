@@ -1,6 +1,6 @@
-# RBPBind <img src="man/figures/logo.png" align="right" height="139" alt="RBPBind logo" style="margin-left: 20px;" />
-
-<br clear="right"/>
+<p align="center">
+  <img src="man/figures/logo.png" alt="RBPBind" height="200" />
+</p>
 
 <!-- badges: start -->
 [![R-CMD-check](https://img.shields.io/badge/R%20CMD%20check-passing-brightgreen)](https://github.com/S00NYI/RBPBind)
