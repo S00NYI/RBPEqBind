@@ -1,0 +1,36 @@
+Package: RBPBind
+Title: RNA-Binding Protein Competitive Binding Simulation
+Version: 0.99.0
+Authors@R: c(person("Soon", "Yi", 
+                    email = "cu.soonyi@gmail.com", 
+                    role = c("aut", "cre"),
+                    comment = c(ORCID = "0000-0002-4535-6532")))
+Description: Simulates competitive binding of N RBPs to RNA sequences using 
+    an equilibrium binding model. Supports single sequences, concentration 
+    grids, and transcriptome-wide analysis. Designed for Bioconductor.
+License: GPL-3
+Encoding: UTF-8
+biocViews: RNABinding, Simulation, Transcriptomics, Visualization
+BugReports: https://github.com/S00NYI/RBPBind/issues
+URL: https://github.com/S00NYI/RBPBind
+Depends: 
+    R (>= 4.3.0)
+Imports: 
+    Biostrings,
+    data.table,
+    ggplot2,
+    jsonlite,
+    methods,
+    parallel,
+    pracma,
+    S4Vectors,
+    stats,
+    SummarizedExperiment,
+    utils
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    progressr
+VignetteBuilder: knitr
+RoxygenNote: 7.3.3

@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.gitignore$
+^\.git$
+^README\.Rmd$
+^LICENSE\.md$
+^alpha_build_test\.R$
+^data$
+^legacy_files$
+^\.DS_Store$

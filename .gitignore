@@ -1,0 +1,36 @@
+# R-specific
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+.Rproj.user/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Generated files (not needed in repo)
+*.html
+*.pdf
+
+# Test output files
+test_res_*.json
+test_res_*.csv
+
+# IDE
+.vscode/
+*.swp
+
+# Build artifacts
+*.tar.gz
+*.Rcheck/
+
+# Vignette build artifacts
+vignettes/*.R
+vignettes/*.html
+vignettes/*_files/
+
+# Data folder (for development only, not package data)
+# data/  # Uncomment if you don't want to track data/
+legacy_files/
+data/

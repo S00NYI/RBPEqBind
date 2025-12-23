@@ -1,0 +1,453 @@
+---
+title: "Introduction to RBPBind"
+author: "Soon Yi"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to RBPBind}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+# Overview
+
+**RBPBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) 
+to RNA sequences using an equilibrium binding model. This package provides tools for:
+
+- Loading RBP affinity models from k-mer tables
+- Simulating competitive binding at equilibrium  
+- Visualizing binding profiles and competition patterns
+- Exporting results to various formats including SummarizedExperiment
+
+# Introduction
+
+## Background
+
+RBPBind implements a mathematical simulation framework for RNA-RBP interactions 
+based on equilibrium binding kinetics. The simulation follows two key principles:
+
+1. **Simultaneous competition**: All RBPs are introduced simultaneously, ensuring 
+   equal chances of interaction with the RNA.
+2. **Independent binding sites**: Each RNA binding site and its interactions with 
+   RBPs are treated as independent events, allowing calculation of equilibrium 
+   concentrations for each binding site.
+
+## Mathematical Model
+
+For an RNA sequence of length $l$ interacting with $N$ RBPs, there exist $l - (k-1)$ 
+possible k-mer binding sites. For each binding site $R$ on the RNA, the kinetic 
+reaction scheme is:
+
+$$R + P_i \rightleftharpoons P_iR$$
+
+At equilibrium, the dissociation constant is defined as:
+
+$$K_{D,i} = \frac{[R_{eq}][P_{i,eq}]}{[P_iR]}$$
+
+Given the initial concentrations of RBPs ($[P_{0,i}]$) and RNA ($[R_0]$), the 
+equilibrium concentration of each RNA-RBP complex can be determined by solving 
+the system of equations with the constraint:
+
+$$[R_0] \geq [R_{eq}] \geq 0$$
+
+From the equilibrium concentrations, binding probability at each site ($p_{site}$) 
+is calculated as $[P_iR] / [R_0]$. Per-position probability ($p_{pos}$) is then 
+obtained by averaging overlapping $p_{site}$ values (up to $k$ overlaps per position).
+
+For RBP enrichment analysis, fold-change is calculated by comparing the proportion 
+of each RBP to a uniform distribution across the RNA sequence.
+
+### Simulation Initial Conditions
+
+For simulation purposes, the initial conditions are set so that all $[P_{i,0}]$ 
+are in excess of the target RNA $[R_0]$. For each binding site, the effective 
+initial RNA concentration needs to be determined, as a given binding site may 
+exist more than once in the RNA sequence. Thus, the effective initial concentration 
+of a binding site $[R_{0,e}]$ is calculated as $n \times [R_0]$, where $n$ is the 
+number of times the binding site motif appears in the RNA sequence.
+
+## Reference
+
+For a detailed description of the mathematical model and its biological applications, 
+please refer to:
+
+> Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025). 
+> *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
+> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v2
+
+# Setup
+
+```{r load-packages}
+# Load package (use load_all for development, library for installed)
+if (requireNamespace("RBPBind", quietly = TRUE)) {
+  library(RBPBind)
+} else {
+  devtools::load_all()
+}
+library(data.table)
+library(ggplot2)
+```
+
+# Data Loading
+
+## Loading RBP Models
+
+RBP affinity models are loaded from CSV files containing k-mer motifs and scores 
+(enrichment or affinity values). The CSV file requires a column of sequence motifs 
+and score columns for each RBP.
+
+The RBP-RNA affinity scores can be derived from:
+
+- **RNA Bind-n-Seq** (RBNS)
+- **RNACompete**
+- Other similar RBP target enrichment experiments
+
+> For generating motif enrichment scores from CLIP experiments, please refer to 
+> the companion R package **RBPSpecificity** (in development).
+
+```{r load-models}
+# Load raw models from package sample data
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+raw_models <- loadModel(model_file)
+
+# View available RBPs
+names(raw_models)
+```
+
+The included four model RBPs (HH, HL, LH, LL) are designed to bind the 5-mer 
+poly-U motif (UUUUU) with highest affinity, but with varying binding specificity 
+and affinity distributions. For details on how these model RBP scores were 
+generated, please refer to the manuscript referenced above.
+
+## Visualizing Raw Models
+
+The `viewModel()` function can be used to inspect the score distributions of 
+raw models before affinity conversion:
+
+```{r view-raw-models, fig.cap="Raw score distributions for model RBPs"}
+viewModel(raw_models, rbp = c("HH", "HL", "LH", "LL"), bins = 100, alpha = 0.4)
+```
+
+## Setting Affinity Ranges
+
+The included RBP models have enrichment scores normalized to a 0-to-1 scale. 
+For binding simulation, each RBP may have different minimum and maximum affinity 
+ranges, which are set using the `setModel()` function:
+
+```{r set-models}
+# High affinity (H) = high Ka -> low Kd
+# Low affinity (L) = low Ka -> high Kd
+max_affinities <- c(
+  "HH" = 100, "HL" = 100,  # Ka_max = 100 -> Kd_min = 0.01 nM
+  "LH" = 10,  "LL" = 10    # Ka_max = 10  -> Kd_min = 0.1 nM
+)
+
+min_affinities <- c(
+  "HH" = 0.001, "HL" = 0.001,  # Ka_min = 0.001 -> Kd_max = 1000 nM
+  "LH" = 0.001, "LL" = 0.001
+)
+
+rbp_models <- setModel(raw_models, 
+                        max_affinity = max_affinities, 
+                        min_affinity = min_affinities)
+```
+
+The `viewModel()` function can be used again to inspect the converted affinity 
+(Ka) or dissociation constant (Kd) distributions:
+
+```{r view-models-all, fig.cap="Ka distributions for all RBPs"}
+viewModel(rbp_models, rbp = c("HH", "HL", "LH", "LL"), metric = "Ka", 
+           bins = 100, alpha = 0.4)
+```
+
+To compare specific RBPs, pass only the desired subset:
+
+```{r view-models-subset, fig.cap="Comparing HH vs LL affinity distributions"}
+viewModel(rbp_models, rbp = c("HH", "LL"), metric = "Ka", bins = 100, alpha = 0.5)
+```
+
+# RNA-RBP Binding Simulations
+
+Given the initial concentrations of RBPs and RNA, along with association constants 
+(or dissociation constants) per motif per RBP, RBPBind calculates several metrics 
+for each nucleotide position:
+
+| Metric | Description |
+|--------|-------------|
+| `occupancy` | Binding probability (0-1) |
+| `density` | Normalized binding (sum = 1) |
+| `density_fc` | Fold-change over expectation |
+| `occupancy_fc` | Fold-change over mean occupancy |
+
+**For single RBP simulations** (only one RBP with concentration > 0):
+
+- `density_fc = density × L` (enrichment over uniform distribution)
+- `occupancy_fc = occupancy / mean(occupancy)`
+
+**For multiple active RBPs**:
+
+- `density_fc = self_density / sum(other_densities)`
+- `occupancy_fc = self_occupancy / sum(other_occupancies)`
+
+This vignette covers four simulation scenarios of increasing complexity:
+
+1. **Scenario 1**: Single sequence, fixed concentrations
+2. **Scenario 2**: Single sequence, concentration grid sweep
+3. **Scenario 3**: FASTA file, fixed concentrations
+4. **Scenario 4**: FASTA file, concentration grid sweep
+
+# Scenario 1: RBPs Binding to a Single RNA Target at Fixed Concentrations
+
+## Generating or Loading RNA Sequence
+
+Users can provide their own sequence or use the built-in `generateRNA()` function 
+to create randomized RNA sequences:
+
+```{r generate-rna}
+# Generate a random 100-nt RNA sequence
+random_seq <- generateRNA(100)
+cat("Generated sequence:", substr(random_seq, 1, 50), "...\n")
+
+# Or use a specific reference sequence
+seq <- "UAGCGGUGCGAUUGGCCCGUGGACCGCGUUUUUGCACUCAUCGUUUCGCACUAAGUACAUAUAGUUGCGACAAAGCCGCUUAUGAGUUGGGGGUAUAUUC"
+```
+
+## Running the Simulation
+
+Set initial concentrations of RBPs and target RNA, then run the simulation:
+
+```{r scenario1-simulate}
+# Define concentrations (nM) - competitive binding of all 4 RBPs
+prot_concs <- c("HH" = 100, "HL" = 100, "LH" = 100, "LL" = 100)
+rna_conc <- 10.0  # nM
+
+# Detect k-mer size from models
+k_size <- nchar(rbp_models$HH$motif[1])
+
+# Run simulation
+res <- simulateBinding(
+  sequence = seq,
+  rbp_models = rbp_models,
+  protein_concs = prot_concs,
+  rna_conc = rna_conc,
+  k = k_size
+)
+
+# Add transcript column for visualization
+res$transcript <- "Custom RNA"
+
+head(res)
+```
+
+## Visualization
+
+Each metric calculated using `simulateBinding()` can be visualized with built-in 
+plotting functions.
+
+### Per-Position Binding Profile
+
+The `plotBinding()` function displays binding metrics across positions:
+
+> **Note:** The visualizations below show a zoomed-in view from positions 20-60. 
+> The `xlim` parameter can be removed to show the entire sequence, or adjusted 
+> to view a specific segment of the target RNA.
+
+```{r scenario1-binding-raw, fig.cap="Raw density_fc (positions 20-60)"}
+plotBinding(res, rbp = c("HH", "HL", "LH", "LL"), metric = "density_fc", 
+             transcript = "Custom RNA", xlim = c(20, 60))
+```
+
+For smoother visualization, apply a k-mer sliding window average:
+
+```{r scenario1-binding-window, fig.cap="Density FC with 5-mer smoothing window (positions 20-60)"}
+plotBinding(res, rbp = c("HH", "HL", "LH", "LL"), metric = "density_fc", 
+             transcript = "Custom RNA", window = 5, xlim = c(20, 60))
+```
+
+### Heatmap Visualization
+
+The `plotHeatmap()` function displays binding for multiple RBPs simultaneously:
+
+```{r scenario1-heatmap, fig.cap="Heatmap of occupancy_fc (zoomed region)"}
+plotHeatmap(res, transcript = "Custom RNA", xlim = c(20, 60), 
+             xaxis_type = "both", metric = "occupancy_fc")
+```
+
+## Exporting Results
+
+Simulation results can be exported using the built-in `exportResults()` function 
+in JSON or CSV format:
+
+```{r scenario1-export, eval=FALSE}
+# Export to JSON
+exportResults(res, output_file = "scenario1_results.json", format = "json")
+
+# Export to CSV
+exportResults(res, output_file = "scenario1_results.csv", format = "csv")
+```
+
+Results can also be converted to SummarizedExperiment format:
+
+```{r scenario1-se}
+se <- makeSE(res, rbp_models = rbp_models)
+se
+```
+
+# Scenario 2: RBP Binding with Varying Concentration Grid
+
+To run simulations across multiple combinations of RBP and RNA concentrations, 
+use the `simulateGrid()` function. This function includes a `parallel` option 
+for increased computational efficiency.
+
+## Running Grid Simulation
+
+```{r scenario2-grid, eval=FALSE}
+# Define concentration grids
+prot_grid <- list(
+  HH = c(0, 10, 25, 50, 100, 250, 500, 1000), 
+  HL = c(0, 10, 25, 50, 100, 250, 500, 1000),
+  LH = c(0, 10, 25, 50, 100, 250, 500, 1000),
+  LL = c(0, 10, 25, 50, 100, 250, 500, 1000)
+)
+rna_grid <- c(10, 100, 500, 1000)
+
+res_grid <- simulateGrid(
+  sequence = seq,
+  rbp_models = rbp_models,
+  protein_conc_grid = prot_grid,
+  rna_conc_grid = rna_grid,
+  k = k_size,
+  parallel = TRUE
+)
+```
+
+## Visualization
+
+Grid sweep results can be visualized for specific concentration combinations 
+using the same plotting functions:
+
+```{r scenario2-binding, eval=FALSE}
+# Filter to specific concentration combination
+plotBinding(
+  results = res_grid,
+  rbp = c("HH", "HL", "LH", "LL"),
+  rna_conc = 10,
+  protein_conc = c(HH=10, HL=10, LH=1000, LL=1000),
+  metric = "density"
+)
+```
+
+### Bubble Plot for Pairwise Comparison
+
+The `plotBubble()` function visualizes differences in binding between two RBPs 
+across simulated concentrations, with fixed RNA and other RBP concentrations:
+
+```{r scenario2-bubble, eval=FALSE}
+plotBubble(
+  results = res_grid,
+  rbp_x = "HH",
+  rbp_y = "LL",
+  roi_range = c(29, 33),
+  rna_conc = 10,
+  protein_conc = c(HL=0, LH=0),
+  metric = "density_fc",
+  colors = c("HH" = "skyblue", "LL" = "salmon")
+)
+```
+
+> **Note**: When visualizing binding for only specific RBPs, set the protein 
+> concentration of non-selected RBPs to 0.
+
+### Competition Grid Plot
+
+The `plotGrid()` function focuses on changes in binding for one RBP across 
+different target RNA and competitor RBP concentrations:
+
+```{r scenario2-plot-grid, eval=FALSE}
+# First run a 2-RBP simulation for cleaner visualization
+rbp_models_2rbp <- rbp_models[c("HH", "LL")]
+
+res_grid_2rbp <- simulateGrid(
+  sequence = seq,
+  rbp_models = rbp_models_2rbp,
+  protein_conc_grid = list(HH = c(0, 10, 50, 100, 500), LL = c(0, 10, 50, 100, 500)),
+  rna_conc_grid = c(10, 50, 100, 500),
+  k = k_size,
+  parallel = TRUE
+)
+
+plotGrid(
+  results = res_grid_2rbp,
+  rbp1 = "HH",
+  rbp2 = "LL",
+  rbp1_concs = c(10, 50, 100, 500),
+  roi_range = c(29, 33),
+  metric = "density"
+)
+```
+
+Grid sweep results can also be exported in JSON/CSV or SummarizedExperiment format.
+
+# Scenario 3: RBPs Binding to Multiple Target RNAs
+
+To simulate RBP binding to multiple RNA sequences (e.g., transcript sequences 
+from bioMart), RBPBind provides functions to load FASTA files directly. Note that 
+binding simulation is performed on a sequence-by-sequence basis, not simultaneously 
+on all RNA sequences in the FASTA file.
+
+```{r scenario3-simulate, eval=FALSE}
+# Load sample FASTA from package
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+
+res_fasta <- simulateBindingF(
+  fasta_file = fasta_file,
+  rbp_models = rbp_models,
+  protein_concs = c(HH = 100, HL = 100, LH = 100, LL = 100),
+  rna_conc = 10,
+  k = 5
+)
+```
+
+Visualization and result export are performed the same way as in Scenario 1.
+
+# Scenario 4: RBPs Binding to Multiple Target RNAs Across Different Concentrations
+
+RBPBind also supports concentration grid sweeps across sequences in a FASTA file:
+
+```{r scenario4-grid, eval=FALSE}
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+
+res_grid_fasta <- simulateGridF(
+  fasta_file = fasta_file,
+  rbp_models = rbp_models,
+  protein_conc_grid = list(
+    HH = c(0, 100, 200, 500),
+    HL = c(0, 100, 200, 500),
+    LH = c(0, 100, 200, 500),
+    LL = c(0, 100, 200, 500)
+  ),
+  rna_conc_grid = c(10),
+  k = 5,
+  parallel = TRUE
+)
+```
+
+Visualization and export functions work the same as in Scenario 2.
+
+# Session Info
+
+```{r session}
+sessionInfo()
+```
