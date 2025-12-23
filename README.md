@@ -57,8 +57,7 @@ plotBinding(results, rbp = c("RBP1", "RBP2"))
 - **Competitive binding simulation** for multiple RBPs
 - **Concentration grid sweeps** for parameter exploration
 - **FASTA file support** for transcriptome-wide analysis
-- **Rich visualization** with binding profiles, heatmaps, and bubble plots
-- **SummarizedExperiment output** for Bioconductor integration
+- **Visualization** with binding profiles, heatmaps, and bubble plots
 
 ## Documentation
 
