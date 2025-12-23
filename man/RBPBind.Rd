@@ -52,5 +52,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Soon Yi \email{cu.soonyi@gmail.com} (\href{https://orcid.org/0000-0002-4535-6532}{ORCID})
 
+Other contributors:
+\itemize{
+  \item National Institutes of Health (T32 GM152319) [funder]
+}
+
 }
 \keyword{internal}

@@ -81,4 +81,4 @@ If you use RBPBind in your research, please cite:
 This package was developed in part with **Google Antigravity**.
 
 For the original Python implementation of RNA-RBP interaction simulations, see:
-https://github.com/S00NYI/Specificity_BITs
+https://github.com/S00NYI/BITS_Specificity
