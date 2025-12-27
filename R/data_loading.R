@@ -9,7 +9,7 @@
 #' @return A named list of data.tables, each with 'motif' and 'score' columns.
 #' @examples
 #' # Load sample model from package
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' raw_models <- loadModel(model_file)
 #' names(raw_models)
 #'
@@ -79,7 +79,7 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
 #' @return A named list of data.tables, each with 'motif' and 'Kd' columns.
 #' @examples
 #' # Load and process model
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' raw_models <- loadModel(model_file)
 #' rbp_models <- setModel(raw_models, max_affinity = 100)
 #' 

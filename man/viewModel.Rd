@@ -37,7 +37,7 @@ Creates a histogram of Kd or Ka distributions for RBP models.
 }
 \examples{
 if (FALSE) {
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file))
 viewModel(rbp_models, metric = "Kd")
 }

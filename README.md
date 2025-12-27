@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="man/figures/logo.png" alt="RBPBind" height="200" />
+  <img src="man/figures/logo.png" alt="RBPEqBind" height="200" />
 </p>
 
 <!-- badges: start -->
-[![R-CMD-check](https://img.shields.io/badge/R%20CMD%20check-passing-brightgreen)](https://github.com/S00NYI/RBPBind)
+[![R-CMD-check](https://img.shields.io/badge/R%20CMD%20check-passing-brightgreen)](https://github.com/S00NYI/RBPEqBind)
 [![License: GPL-3](https://img.shields.io/badge/License-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![R Version](https://img.shields.io/badge/R-%3E%3D%204.3-blue)](https://cran.r-project.org/)
 <!-- badges: end -->
 
-**RBPBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) to RNA sequences using equilibrium binding kinetics.
+**RBPEqBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) to RNA sequences using equilibrium binding kinetics.
 
 ## Installation
 
@@ -19,7 +19,7 @@
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 
-devtools::install_github("S00NYI/RBPBind")
+devtools::install_github("S00NYI/RBPEqBind")
 ```
 
 ### From Bioconductor (After Acceptance)
@@ -28,13 +28,13 @@ devtools::install_github("S00NYI/RBPBind")
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("RBPBind")
+BiocManager::install("RBPEqBind")
 ```
 
 ## Quick Start
 
 ```r
-library(RBPBind)
+library(RBPEqBind)
 
 # Load and process RBP models
 raw_models <- loadModel("model.csv")
@@ -61,7 +61,7 @@ plotBinding(results, rbp = c("RBP1", "RBP2"))
 
 ## Documentation
 
-See the [package vignette](vignettes/RBPBind-intro.Rmd) for detailed examples covering:
+See the [package vignette](vignettes/RBPEqBind-intro.Rmd) for detailed examples covering:
 
 1. Single sequence simulation
 2. Concentration grid sweeps
@@ -70,7 +70,7 @@ See the [package vignette](vignettes/RBPBind-intro.Rmd) for detailed examples co
 
 ## Citation
 
-If you use RBPBind in your research, please cite:
+If you use RBPEqBind in your research, please cite:
 
 > Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025). 
 > *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 

@@ -46,7 +46,7 @@ Plots the binding profile for one or more RBPs.
 }
 \examples{
 if (FALSE) {
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
 plotBinding(results, rbp = c("HH", "HL"))

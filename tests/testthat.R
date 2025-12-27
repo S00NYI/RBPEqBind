@@ -1,5 +1,5 @@
 # This file is part of the standard testthat setup
 library(testthat)
-library(RBPBind)
+library(RBPEqBind)
 
-test_check("RBPBind")
+test_check("RBPEqBind")

@@ -25,7 +25,7 @@ Simulates competitive binding of multiple RBPs to a single RNA sequence.
 }
 \examples{
 # Load and process model
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 raw_models <- loadModel(model_file, rbp = c("HH", "HL"))
 rbp_models <- setModel(raw_models, max_affinity = 100)
 

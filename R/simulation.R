@@ -10,7 +10,7 @@
 #' @return A data.table containing per-position binding probabilities/occupancies.
 #' @examples
 #' # Load and process model
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' raw_models <- loadModel(model_file, rbp = c("HH", "HL"))
 #' rbp_models <- setModel(raw_models, max_affinity = 100)
 #'
@@ -185,7 +185,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' @return A data.table with results for all grid combinations.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' grid <- simulateGrid("ACGUACGU", rbp_models,
 #'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
@@ -285,8 +285,8 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @return A data.table with combined results, including transcript column.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
-#' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBindingF(fasta_file, rbp_models, c(HH = 100, HL = 100))
 #' }

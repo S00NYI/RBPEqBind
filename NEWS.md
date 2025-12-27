@@ -1,4 +1,4 @@
-# RBPBind News
+# RBPEqBind News
 
 ## Version 0.99.0
 

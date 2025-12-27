@@ -37,8 +37,8 @@ Simulates binding for all sequences in a FASTA file.
 }
 \examples{
 if (FALSE) {
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
-fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBindingF(fasta_file, rbp_models, c(HH = 100, HL = 100))
 }

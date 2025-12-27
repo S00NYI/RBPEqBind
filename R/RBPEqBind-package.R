@@ -1,6 +1,6 @@
-#' RBPBind: Simulate Competitive RBP Binding to RNA
+#' RBPEqBind: Simulate Competitive RBP Binding to RNA
 #'
-#' RBPBind simulates competitive binding of multiple RNA-binding proteins (RBPs)
+#' RBPEqBind simulates competitive binding of multiple RNA-binding proteins (RBPs)
 #' to RNA sequences using an equilibrium binding model. The package provides tools
 #' for loading RBP affinity models, running binding simulations, and visualizing
 #' competition patterns.
@@ -17,7 +17,7 @@
 #'
 #' @section Getting Started:
 #' See the package vignette for a comprehensive introduction:
-#' \code{vignette("RBPBind-intro", package = "RBPBind")}
+#' \code{vignette("RBPEqBind-intro", package = "RBPEqBind")}
 #'
 #' @references
 #' Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025).
@@ -35,7 +35,7 @@
 #' @importFrom pracma fsolve
 #' 
 #' @docType package
-#' @name RBPBind
+#' @name RBPEqBind
 #' @keywords internal
 "_PACKAGE"
 

@@ -22,7 +22,7 @@ Score is assumed to be proportional to affinity (Ka), so Kd = 1/Ka.
 }
 \examples{
 # Load and process model
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 raw_models <- loadModel(model_file)
 rbp_models <- setModel(raw_models, max_affinity = 100)
 

@@ -37,7 +37,7 @@ Runs simulations across a grid of protein/RNA concentrations.
 }
 \examples{
 if (FALSE) {
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 grid <- simulateGrid("ACGUACGU", rbp_models,
   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),

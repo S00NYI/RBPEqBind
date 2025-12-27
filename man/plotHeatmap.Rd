@@ -40,7 +40,7 @@ Plots a heatmap of binding for multiple RBPs.
 }
 \examples{
 if (FALSE) {
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
 plotHeatmap(results, transcript = NULL)

@@ -15,7 +15,7 @@
 #' @return A ggplot object.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
 #' plotBinding(results, rbp = c("HH", "HL"))
@@ -193,7 +193,7 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
 #' @return A ggplot object.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
 #' plotHeatmap(results, transcript = NULL)
@@ -692,7 +692,7 @@ plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL,
 #' @return A ggplot object.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file))
 #' viewModel(rbp_models, metric = "Kd")
 #' }

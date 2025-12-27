@@ -12,7 +12,7 @@
 #' @return A data.table of peaks with start, end, scores.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGUACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
 #' results$transcript <- "test"

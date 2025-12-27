@@ -1,10 +1,10 @@
 ---
-title: "Introduction to RBPBind"
+title: "Introduction to RBPEqBind"
 author: "Soon Yi"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introduction to RBPBind}
+  %\VignetteIndexEntry{Introduction to RBPEqBind}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 # Overview
 
-**RBPBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) 
+**RBPEqBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) 
 to RNA sequences using an equilibrium binding model. This package provides tools for:
 
 - Loading RBP affinity models from k-mer tables
@@ -35,7 +35,7 @@ to RNA sequences using an equilibrium binding model. This package provides tools
 
 ## Background
 
-RBPBind implements a mathematical simulation framework for RNA-RBP interactions 
+RBPEqBind implements a mathematical simulation framework for RNA-RBP interactions 
 based on equilibrium binding kinetics. The simulation follows two key principles:
 
 1. **Simultaneous competition**: All RBPs are introduced simultaneously, ensuring 
@@ -90,7 +90,7 @@ please refer to:
 # Setup
 
 ```{r load-packages}
-library(RBPBind)
+library(RBPEqBind)
 library(data.table)
 library(ggplot2)
 ```
@@ -114,7 +114,7 @@ The RBP-RNA affinity scores can be derived from:
 
 ```{r load-models}
 # Load raw models from package sample data
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 raw_models <- loadModel(model_file)
 
 # View available RBPs
@@ -176,7 +176,7 @@ viewModel(rbp_models, rbp = c("HH", "LL"), metric = "Ka", bins = 100, alpha = 0.
 # RNA-RBP Binding Simulations
 
 Given the initial concentrations of RBPs and RNA, along with association constants 
-(or dissociation constants) per motif per RBP, RBPBind calculates several metrics 
+(or dissociation constants) per motif per RBP, RBPEqBind calculates several metrics 
 for each nucleotide position:
 
 | Metric | Description |
@@ -398,13 +398,13 @@ Grid sweep results can also be exported in JSON/CSV or SummarizedExperiment form
 # Scenario 3: RBPs Binding to Multiple Target RNAs
 
 To simulate RBP binding to multiple RNA sequences (e.g., transcript sequences 
-from bioMart), RBPBind provides functions to load FASTA files directly. Note that 
+from bioMart), RBPEqBind provides functions to load FASTA files directly. Note that 
 binding simulation is performed on a sequence-by-sequence basis, not simultaneously 
 on all RNA sequences in the FASTA file.
 
 ```{r scenario3-simulate, eval=FALSE}
 # Load sample FASTA from package
-fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 
 res_fasta <- simulateBindingF(
   fasta_file = fasta_file,
@@ -419,10 +419,10 @@ Visualization and result export are performed the same way as in Scenario 1.
 
 # Scenario 4: RBPs Binding to Multiple Target RNAs Across Different Concentrations
 
-RBPBind also supports concentration grid sweeps across sequences in a FASTA file:
+RBPEqBind also supports concentration grid sweeps across sequences in a FASTA file:
 
 ```{r scenario4-grid, eval=FALSE}
-fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPBind")
+fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 
 res_grid_fasta <- simulateGridF(
   fasta_file = fasta_file,

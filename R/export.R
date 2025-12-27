@@ -181,7 +181,7 @@ importResults <- function(input_file) {
 #' @return A SummarizedExperiment with assays and row/col metadata.
 #' @examples
 #' if (FALSE) {
-#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
 #' se <- makeSE(results, rbp_models)

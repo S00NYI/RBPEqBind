@@ -22,7 +22,7 @@ The file should have a 'Motif' column and one or more RBP score columns.
 }
 \examples{
 # Load sample model from package
-model_file <- system.file("extdata", "model_RBP.csv", package = "RBPBind")
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 raw_models <- loadModel(model_file)
 names(raw_models)
 
