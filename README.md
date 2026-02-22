@@ -22,15 +22,6 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("S00NYI/RBPEqBind")
 ```
 
-### From Bioconductor (After Acceptance)
-
-```r
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("RBPEqBind")
-```
-
 ## Quick Start
 
 ```r
