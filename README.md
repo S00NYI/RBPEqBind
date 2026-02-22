@@ -59,6 +59,8 @@ See the [package vignette](vignettes/RBPEqBind-intro.Rmd) for detailed examples 
 3. FASTA file processing
 4. Visualization options
 
+For detailed usage, see Figure_Scripts folder in: https://github.com/S00NYI/BITS_Specificity
+
 ## Citation
 
 If you use RBPEqBind in your research, please cite:
@@ -67,9 +69,6 @@ If you use RBPEqBind in your research, please cite:
 > *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
 > bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v2
 
-## Acknowledgments
-
 This package was developed in part with **Google Antigravity**.
 
-For the original Python implementation of RNA-RBP interaction simulations, see:
-https://github.com/S00NYI/BITS_Specificity
+For the original R implementation of RBP simulation analysis, see Deprecated folder in: https://github.com/S00NYI/BITS_Specificity
