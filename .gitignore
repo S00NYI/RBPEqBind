@@ -4,6 +4,7 @@
 .RData
 .Ruserdata
 .Rproj.user/
+*.Rproj
 
 # macOS
 .DS_Store
