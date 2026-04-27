@@ -65,7 +65,7 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
   # data.table way: grouping by consecutive TRUEs
   dt[, cluster := rleid(is_peak), by = group_col]
   
-  peaks <- dt[is_peak == TRUE, .(
+  peaks <- dt[is_peak, .(
     start = min(pos),
     end = max(pos),
     length = .N,
