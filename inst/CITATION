@@ -1,8 +1,8 @@
 citHeader("To cite package 'RBPEqBind' in publications use:")
 
-citEntry(entry = "Article",
+bibentry(bibtype = "Article",
   title        = "Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding",
-  author       = personList(
+  author       = c(
     as.person("Soon Yi"),
     as.person("Shashi S. Singh"),
     as.person("Xuan Ye"),

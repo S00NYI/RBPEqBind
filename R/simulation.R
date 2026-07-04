@@ -51,7 +51,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
     }
 
     match_idx <- match(binding_params$motif, model$motif)
-    if (any(is.na(match_idx))) {
+    if (anyNA(match_idx)) {
       missing <- head(binding_params$motif[is.na(match_idx)])
       warning("Some motifs in sequence not found in model for ", rbp, ": ", paste(missing, collapse=","), "... using Inf Kd (no binding)")
       kds <- rep(Inf, nrow(binding_params))
