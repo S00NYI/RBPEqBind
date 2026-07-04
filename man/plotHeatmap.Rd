@@ -18,19 +18,19 @@ plotHeatmap(
 \arguments{
 \item{results}{data.table of simulation results.}
 
-\item{transcript}{Transcript name to filter.}
+\item{transcript}{Transcript name to filter (required).}
 
-\item{rbps}{Optional vector of RBP names.}
+\item{rbps}{Optional vector of RBP names to include (default NULL, infers all).}
 
-\item{xlim}{Optional x-axis limits.}
+\item{xlim}{Optional x-axis limits (default NULL).}
 
-\item{xaxis_type}{Type of x-axis labels: "nucleotide", "position", or "both".}
+\item{xaxis_type}{Type of x-axis labels: "nucleotide" (default), "position", or "both".}
 
-\item{metric}{Type of metric: "occupancy", "density", "density_fc", or "occupancy_fc".}
+\item{metric}{Type of metric: "occupancy" (default), "density", "density_fc", or "occupancy_fc".}
 
-\item{window}{Optional integer for K-mer sliding window average.}
+\item{window}{Optional integer for K-mer sliding window average (default NULL).}
 
-\item{zlim}{Optional numeric vector for color scale limits.}
+\item{zlim}{Optional numeric vector for color scale limits (default NULL).}
 }
 \value{
 A ggplot object.
@@ -39,10 +39,9 @@ A ggplot object.
 Plots a heatmap of binding for multiple RBPs.
 }
 \examples{
-if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
-rbp_models <- setModel(loadModel(model_file))
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
-plotHeatmap(results, transcript = NULL)
-}
+results$transcript <- "test_transcript"
+plotHeatmap(results, transcript = "test_transcript")
 }

@@ -1,20 +1,11 @@
-#' Equilibrium Binding Solver
-#'
-#' Solves for the free RNA concentration in a competitive binding system.
-#'
-#' @param RNA_total Total RNA concentration (numeric).
-#' @param protein_totals Vector of total protein concentrations for N RBPs (numeric vector).
-#' @param Kds Vector of dissociation constants (Kd) for N RBPs (numeric vector).
-#' @return The equilibrium free RNA concentration.
-#' @examples
-#' # Two RBPs competing for RNA
-#' free_rna <- solveEquilibrium(
-#'   RNA_total = 10,
-#'   protein_totals = c(100, 100),
-#'   Kds = c(10, 50)
-#' )
-#' free_rna
-#' @export
+# Equilibrium Binding Solver
+#
+# Solves for the free RNA concentration in a competitive binding system.
+#
+# @param RNA_total Total RNA concentration (numeric).
+# @param protein_totals Vector of total protein concentrations for N RBPs (numeric vector).
+# @param Kds Vector of dissociation constants (Kd) for N RBPs (numeric vector).
+# @return The equilibrium free RNA concentration.
 solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
   # Input validation
   if (length(protein_totals) != length(Kds)) {
@@ -45,23 +36,19 @@ solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
   if (f_lower == 0) return(0)
   if (f_upper == 0) return(RNA_total)
   
-  # Use uniroot
-  result <- stats::uniroot(obj_func, interval = c(0, RNA_total), tol = .Machine$double.eps^0.25)
+# Use uniroot with a standard tolerance of 1e-5 to balance precision and speed
+  result <- stats::uniroot(obj_func, interval = c(0, RNA_total), tol = 1e-5)
   return(result$root)
 }
 
-#' Calculate Bound Concentrations
-#'
-#' Calculates the equilibrium bound concentrations for each RBP.
-#'
-#' @param free_RNA Equilibrium free RNA concentration.
-#' @param protein_totals Vector of total protein concentrations.
-#' @param Kds Vector of dissociation constants.
-#' @return Vector of bound concentrations for each RBP.
-#' @examples
-#' free_rna <- solveEquilibrium(10, c(100, 100), c(10, 50))
-#' calcBoundProtein(free_rna, c(100, 100), c(10, 50))
-#' @export
+# Calculate Bound Concentrations
+#
+# Calculates the equilibrium bound concentrations for each RBP.
+#
+# @param free_RNA Equilibrium free RNA concentration.
+# @param protein_totals Vector of total protein concentrations.
+# @param Kds Vector of dissociation constants.
+# @return Vector of bound concentrations for each RBP.
 calcBoundProtein <- function(free_RNA, protein_totals, Kds) {
   return((protein_totals * free_RNA) / (Kds + free_RNA))
 }

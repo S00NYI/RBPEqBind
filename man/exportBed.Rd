@@ -20,9 +20,15 @@ Invisibly returns NULL. Called for side effect of writing BED file.
 }
 \description{
 Simple BED export for ranges exceeding threshold.
+If the transcript headers contain genomic coordinates (e.g. "chr1:1000-2000(+)"),
+it translates transcript-relative peak coordinates into genomic coordinates.
 }
 \examples{
-if (FALSE) {
-exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
-}
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+results$transcript <- "test_transcript"
+tmp_bed <- tempfile(fileext = ".bed")
+exportBed(results, tmp_bed, rbp = "HH", threshold = 0.1)
+unlink(tmp_bed)
 }

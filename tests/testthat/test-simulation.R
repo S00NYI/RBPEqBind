@@ -91,15 +91,17 @@ test_that("simulateGrid returns correct structure", {
   expect_equal(nrow(result), 12)
 })
 
-test_that("simulateBindingF processes FASTA files", {
-  skip_if_not(file.exists("../../data/test_transcripts.fa"))
+test_that("simulateBindingFasta processes FASTA files", {
+  fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
+  skip_if(fasta_file == "")
   
   models <- list(
     RBP1 = data.table::data.table(motif = c("AAAAA", "UUUUU"), Kd = c(10, 100))
   )
   
-  result <- simulateBindingF(
-    "../../data/test_transcripts.fa",
+  # Test single file
+  result <- simulateBindingFasta(
+    fasta_file,
     models,
     c(RBP1 = 100),
     rna_conc = 10,
@@ -109,6 +111,18 @@ test_that("simulateBindingF processes FASTA files", {
   
   expect_s3_class(result, "data.table")
   expect_true("transcript" %in% names(result))
+  
+  # Test multiple files
+  result_multi <- simulateBindingFasta(
+    c(fasta_file, fasta_file),
+    models,
+    c(RBP1 = 100),
+    rna_conc = 10,
+    k = 5,
+    parallel = FALSE
+  )
+  expect_s3_class(result_multi, "data.table")
+  expect_equal(nrow(result_multi), 2 * nrow(result))
 })
 
 test_that("density_fc is density * L for single RBP", {

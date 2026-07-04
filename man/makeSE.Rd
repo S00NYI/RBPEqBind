@@ -7,7 +7,7 @@
 makeSE(results, rbp_models = NULL)
 }
 \arguments{
-\item{results}{data.table from simulateBinding or simulateBindingF.}
+\item{results}{data.table from simulateBinding or simulateBindingFasta.}
 
 \item{rbp_models}{Optional named list of RBP models (for colData metadata).}
 }
@@ -18,10 +18,18 @@ A SummarizedExperiment with assays and row/col metadata.
 Converts simulation results to a SummarizedExperiment object.
 }
 \examples{
-if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+
+# Create density columns for the mock results to enable makeSE
+results[, HH_density := HH / sum(HH)]
+results[, HL_density := HL / sum(HL)]
+results[, HH_density_fc := HH_density * 8]
+results[, HL_density_fc := HL_density * 8]
+results[, HH_occupancy_fc := HH / mean(HH)]
+results[, HL_occupancy_fc := HL / mean(HL)]
+
 se <- makeSE(results, rbp_models)
-}
+se
 }

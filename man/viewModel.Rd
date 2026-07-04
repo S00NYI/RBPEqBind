@@ -17,13 +17,13 @@ viewModel(
 \arguments{
 \item{rbp_models}{Named list of RBP model data.tables (from setModel).}
 
-\item{rbp}{Character vector of RBP names to plot. If NULL, plots all.}
+\item{rbp}{Character vector of RBP names to plot (default NULL, plots all).}
 
-\item{metric}{Display metric: "Kd" or "Ka" (affinity = 1/Kd).}
+\item{metric}{Display metric: "Kd" (default) or "Ka" (affinity = 1/Kd).}
 
 \item{bins}{Number of histogram bins (default 50).}
 
-\item{colors}{Named vector of colors per RBP. If NULL, uses default palette.}
+\item{colors}{Named vector of colors per RBP (default NULL, uses Okabe-Ito palette).}
 
 \item{alpha}{Transparency of histogram bars (default 0.5).}
 
@@ -36,9 +36,7 @@ A ggplot object.
 Creates a histogram of Kd or Ka distributions for RBP models.
 }
 \examples{
-if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file))
 viewModel(rbp_models, metric = "Kd")
-}
 }

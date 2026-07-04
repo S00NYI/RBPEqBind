@@ -2,21 +2,33 @@
 % Please edit documentation in R/export.R
 \name{importResults}
 \alias{importResults}
-\title{Import Results from JSON}
+\title{Import Results}
 \usage{
 importResults(input_file)
 }
 \arguments{
-\item{input_file}{Path to JSON file (exported by exportResults).}
+\item{input_file}{Path to JSON or CSV file (exported by exportResults).}
 }
 \value{
 A data.table with the imported results.
 }
 \description{
-Reads previously exported simulation results from a JSON file.
+Reads previously exported simulation results from a JSON or CSV file.
 }
 \examples{
-if (FALSE) {
-results <- importResults("output.json")
-}
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+
+# JSON Example
+tmp_json <- tempfile(fileext = ".json")
+exportResults(results, tmp_json, format = "json")
+results_json <- importResults(tmp_json)
+unlink(tmp_json)
+
+# CSV Example
+tmp_csv <- tempfile(fileext = ".csv")
+exportResults(results, tmp_csv, format = "csv")
+results_csv <- importResults(tmp_csv)
+unlink(tmp_csv)
 }

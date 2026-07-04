@@ -19,28 +19,29 @@ callPeaks(
 
 \item{rbp_primary}{Name of the primary RBP.}
 
-\item{rbp_reference}{Name of the reference RBP (for competitive advantage).}
+\item{rbp_reference}{Name of the reference RBP (for competitive advantage) (default NULL).}
 
-\item{method}{Method: "competitive", "local", or "global".}
+\item{method}{Method: "competitive" (default), "local", or "global".}
 
-\item{threshold}{Threshold (ratio for competitive, occupancy for others).}
+\item{threshold}{Threshold (ratio for competitive, occupancy for others) (default 2.0).}
 
-\item{min_width}{Minimum width of peak to report.}
+\item{min_width}{Minimum width of peak to report (default 3).}
 
 \item{window_size}{Window size for local background (default 50).}
 }
 \value{
-A data.table of peaks with start, end, scores.
+A data.table of peaks with start, end, scores, and optionally genomic coordinates.
 }
 \description{
 Identifies peak regions based on binding occupancy.
+If the transcript headers contain genomic coordinates (e.g. "chr1:1000-2000(+)"),
+it appends translated genomic coordinate columns (chrom, genomic_start, genomic_end, strand).
 }
 \examples{
-if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
-results <- simulateBinding("ACGUACGUACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
-results$transcript <- "test"
-peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.5)
-}
+results <- simulateBinding("ACGUACGUACGUUUUUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+results$transcript <- "test_transcript"
+peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.1)
+head(peaks)
 }

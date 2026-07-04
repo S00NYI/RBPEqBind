@@ -180,17 +180,16 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
 #' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
-#' @param parallel Logical, whether to use parallel processing.
-#' @param n_cores Integer number of cores.
+#' @param parallel Logical, whether to use parallel processing (default TRUE).
+#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
 #' @return A data.table with results for all grid combinations.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' grid <- simulateGrid("ACGUACGU", rbp_models,
 #'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
 #'   rna_conc_grid = 10, parallel = FALSE)
-#' }
+#' head(grid)
 #' @importFrom parallel mclapply detectCores
 #' @export
 simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid, 
@@ -271,34 +270,38 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 # FASTA Input Wrappers
 # ==============================================================================
 
-#' Simulate Binding from FASTA File
+#' Simulate Binding from FASTA File(s)
 #'
-#' Simulates binding for all sequences in a FASTA file.
+#' Simulates competitive binding for all sequences in one or more FASTA files.
 #'
-#' @param fasta_file Path to FASTA file.
+#' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_concs Named numeric vector of protein concentrations.
 #' @param rna_conc RNA concentration (default 10).
 #' @param k K-mer size (default 5).
-#' @param parallel Logical.
-#' @param n_cores Integer number of cores.
-#' @return A data.table with combined results, including transcript column.
+#' @param parallel Logical, whether to use parallel processing (default TRUE).
+#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
+#' @return A data.table with combined results, including a transcript column.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
-#' results <- simulateBindingF(fasta_file, rbp_models, c(HH = 100, HL = 100))
-#' }
+#' results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100), parallel = FALSE)
+#' head(results)
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom data.table rbindlist
 #' @export
-simulateBindingF <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10, 
-                               k = 5, parallel = TRUE, n_cores = NULL) {
+simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10, 
+                                   k = 5, parallel = TRUE, n_cores = NULL) {
   
-  if (!file.exists(fasta_file)) stop("FASTA file not found: ", fasta_file)
+  # Input validation
+  for (f in fasta_file) {
+    if (!file.exists(f)) stop("FASTA file not found: ", f)
+  }
   
-  seqs_dna <- Biostrings::readDNAStringSet(fasta_file)
+  # Read sequences from all files and combine them
+  seqs_dna_list <- lapply(fasta_file, Biostrings::readDNAStringSet)
+  seqs_dna <- do.call(c, seqs_dna_list)
   n_seqs <- length(seqs_dna)
   
   seq_names <- names(seqs_dna)
@@ -352,31 +355,45 @@ simulateBindingF <- function(fasta_file, rbp_models, protein_concs, rna_conc = 1
 }
 
 
-#' Simulate Grid from FASTA File
+#' Simulate Grid from FASTA File(s)
 #'
-#' Simulates binding for all sequences in a FASTA file across a concentration grid.
+#' Simulates competitive binding for all sequences in one or more FASTA files across a concentration grid.
 #'
-#' @param fasta_file Path to FASTA file.
+#' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
-#' @param rna_conc_grid Numeric vector of RNA concentrations.
+#' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
-#' @param parallel Logical.
-#' @param n_cores Integer number of cores.
-#' @return A data.table with combined results, including transcript column.
+#' @param parallel Logical, whether to use parallel processing (default TRUE).
+#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
+#' @return A data.table with combined results, including a transcript column.
 #' @examples
-#' if (FALSE) {
-#' # See vignette for full FASTA grid example
-#' }
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateGridFasta(
+#'   fasta_file = fasta_file,
+#'   rbp_models = rbp_models,
+#'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
+#'   rna_conc_grid = 10,
+#'   k = 5,
+#'   parallel = FALSE
+#' )
+#' head(results)
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom data.table rbindlist
 #' @export
-simulateGridF <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
-                            k = 5, parallel = TRUE, n_cores = NULL) {
+simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
+                               k = 5, parallel = TRUE, n_cores = NULL) {
   
-  if (!file.exists(fasta_file)) stop("FASTA file not found: ", fasta_file)
+  # Input validation
+  for (f in fasta_file) {
+    if (!file.exists(f)) stop("FASTA file not found: ", f)
+  }
   
-  seqs_dna <- Biostrings::readDNAStringSet(fasta_file)
+  # Read sequences from all files and combine them
+  seqs_dna_list <- lapply(fasta_file, Biostrings::readDNAStringSet)
+  seqs_dna <- do.call(c, seqs_dna_list)
   n_seqs <- length(seqs_dna)
   
   seq_names <- names(seqs_dna)
@@ -387,8 +404,6 @@ simulateGridF <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_gr
   
   message("Running grid simulation on ", n_seqs, " sequences...")
   
-  # Parallelize at sequence level, not inside simulateGrid
-  # to avoid nested parallelization
   if (parallel) {
     if (is.null(n_cores)) n_cores <- parallel::detectCores() - 1
     if (n_cores < 1) n_cores <- 1

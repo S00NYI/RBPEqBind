@@ -9,9 +9,9 @@
 #' \describe{
 #'   \item{Model Loading}{\code{\link{loadModel}}, \code{\link{setModel}}, \code{\link{viewModel}}}
 #'   \item{Simulation}{\code{\link{simulateBinding}}, \code{\link{simulateGrid}}, 
-#'         \code{\link{simulateBindingF}}, \code{\link{simulateGridF}}}
+#'         \code{\link{simulateBindingFasta}}, \code{\link{simulateGridFasta}}}
 #'   \item{Visualization}{\code{\link{plotBinding}}, \code{\link{plotHeatmap}}, 
-#'         \code{\link{plotGrid}}, \code{\link{plotBubble}}}
+#'         \code{\link{plotGrid}}}
 #'   \item{Export}{\code{\link{exportResults}}, \code{\link{makeSE}}}
 #' }
 #'
@@ -20,9 +20,9 @@
 #' \code{vignette("RBPEqBind-intro", package = "RBPEqBind")}
 #'
 #' @references
-#' Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025).
+#' Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2025).
 #' Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.
-#' bioRxiv. \url{https://www.biorxiv.org/content/10.1101/2025.03.28.646018v2}
+#' bioRxiv. \url{https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4}
 #'
 #' @section Acknowledgments:
 #' This package was developed in part with Google Antigravity.

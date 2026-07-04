@@ -3,9 +3,10 @@
 
 test_that("loadModel reads multi-RBP CSV correctly", {
   # Test with actual data file
-  skip_if_not(file.exists("../../data/model_RBP.csv"))
+  csv_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+  skip_if(csv_file == "")
   
-  result <- loadModel("../../data/model_RBP.csv")
+  result <- loadModel(csv_file)
   
   expect_type(result, "list")
   expect_true(length(result) >= 1)
@@ -18,9 +19,10 @@ test_that("loadModel reads multi-RBP CSV correctly", {
 })
 
 test_that("loadModel filters by k-mer length", {
-  skip_if_not(file.exists("../../data/model_RBP.csv"))
+  csv_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+  skip_if(csv_file == "")
   
-  result <- loadModel("../../data/model_RBP.csv", k = 5)
+  result <- loadModel(csv_file, k = 5)
   
   for (rbp in names(result)) {
     motif_lengths <- nchar(result[[rbp]]$motif)
@@ -29,9 +31,10 @@ test_that("loadModel filters by k-mer length", {
 })
 
 test_that("loadModel filters by RBP names", {
-  skip_if_not(file.exists("../../data/model_RBP.csv"))
+  csv_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+  skip_if(csv_file == "")
   
-  result <- loadModel("../../data/model_RBP.csv", rbp = c("HH", "LL"))
+  result <- loadModel(csv_file, rbp = c("HH", "LL"))
   
   expect_equal(length(result), 2)
   expect_true("HH" %in% names(result))

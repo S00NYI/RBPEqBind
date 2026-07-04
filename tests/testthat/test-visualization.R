@@ -110,3 +110,22 @@ test_that("viewModel handles multiple RBPs", {
   
   expect_s3_class(p, "ggplot")
 })
+
+test_that("plotGrid returns ggplot object", {
+  skip_if_not_installed("ggplot2")
+  
+  mock_grid <- data.table::data.table(
+    pos = rep(1:5, 4),
+    nt = rep(c("A", "C", "G", "U", "A"), 4),
+    Conc_RBP1 = rep(c(10, 100), each = 10),
+    Conc_RBP2 = rep(c(10, 100), 2, each = 5),
+    rna_conc = 10,
+    RBP1 = runif(20),
+    RBP2 = runif(20)
+  )
+  mock_grid[, RBP1_density := RBP1 / sum(RBP1), by = .(Conc_RBP1, Conc_RBP2)]
+  mock_grid[, RBP1_density_fc := RBP1_density * 5]
+  
+  p <- plotGrid(mock_grid, rbp1 = "RBP1", rbp2 = "RBP2", roi_range = c(1, 5), metric = "density")
+  expect_s3_class(p, "ggplot")
+})

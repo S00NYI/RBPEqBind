@@ -2,7 +2,10 @@
 title: "Introduction to RBPEqBind"
 author: "Soon Yi"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{Introduction to RBPEqBind}
   %\VignetteEngine{knitr::rmarkdown}
@@ -44,6 +47,10 @@ based on equilibrium binding kinetics. The simulation follows two key principles
    RBPs are treated as independent events, allowing calculation of equilibrium 
    concentrations for each binding site.
 
+## Motivation
+
+Competitive binding among multiple RNA-binding proteins (RBPs) is a fundamental regulator of post-transcriptional gene expression. Understanding how multiple RBPs compete for overlapping binding sites is critical for interpreting transcriptome-wide binding data (such as CLIP-seq) and functional genomics studies. `RBPEqBind` provides a mathematical simulation framework to model competitive RBP binding kinetics on transcript sequences, allowing researchers to explore how RBP binding landscapes are altered by relative protein abundances, RNA concentration, and binding affinity distributions.
+
 ## Mathematical Model
 
 For an RNA sequence of length $l$ interacting with $N$ RBPs, there exist $l - (k-1)$ 
@@ -83,9 +90,27 @@ number of times the binding site motif appears in the RNA sequence.
 For a detailed description of the mathematical model and its biological applications, 
 please refer to:
 
-> Yi S, Singh SS, Ye X, Krishna R, Jankowsky E, Luna JM. (2025). 
+> Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2025). 
 > *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
-> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v2
+> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4
+
+# Installation
+
+To install `RBPEqBind`, start R and use the `BiocManager` package:
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("RBPEqBind")
+```
+
+For the development version from GitHub, you can use `devtools` or `pak`:
+
+```r
+# install.packages("devtools")
+devtools::install_github("S00NYI/RBPEqBind")
+```
 
 # Setup
 
@@ -285,12 +310,18 @@ plotHeatmap(res, transcript = "Custom RNA", xlim = c(20, 60),
 Simulation results can be exported using the built-in `exportResults()` function 
 in JSON or CSV format:
 
-```{r scenario1-export, eval=FALSE}
+```{r scenario1-export}
 # Export to JSON
-exportResults(res, output_file = "scenario1_results.json", format = "json")
+tmp_json <- tempfile(fileext = ".json")
+exportResults(res, output_file = tmp_json, format = "json")
 
 # Export to CSV
-exportResults(res, output_file = "scenario1_results.csv", format = "csv")
+tmp_csv <- tempfile(fileext = ".csv")
+exportResults(res, output_file = tmp_csv, format = "csv")
+
+# Clean up
+unlink(tmp_json)
+unlink(tmp_csv)
 ```
 
 Results can also be converted to SummarizedExperiment format:
@@ -308,15 +339,15 @@ for increased computational efficiency.
 
 ## Running Grid Simulation
 
-```{r scenario2-grid, eval=FALSE}
+```{r scenario2-grid}
 # Define concentration grids
 prot_grid <- list(
-  HH = c(0, 10, 25, 50, 100, 250, 500, 1000), 
-  HL = c(0, 10, 25, 50, 100, 250, 500, 1000),
-  LH = c(0, 10, 25, 50, 100, 250, 500, 1000),
-  LL = c(0, 10, 25, 50, 100, 250, 500, 1000)
+  HH = c(10, 100), 
+  HL = c(10, 100),
+  LH = c(10, 100),
+  LL = c(10, 100)
 )
-rna_grid <- c(10, 100, 500, 1000)
+rna_grid <- c(10)
 
 res_grid <- simulateGrid(
   sequence = seq,
@@ -324,7 +355,7 @@ res_grid <- simulateGrid(
   protein_conc_grid = prot_grid,
   rna_conc_grid = rna_grid,
   k = k_size,
-  parallel = TRUE
+  parallel = FALSE
 )
 ```
 
@@ -333,61 +364,40 @@ res_grid <- simulateGrid(
 Grid sweep results can be visualized for specific concentration combinations 
 using the same plotting functions:
 
-```{r scenario2-binding, eval=FALSE}
+```{r scenario2-binding}
 # Filter to specific concentration combination
 plotBinding(
   results = res_grid,
   rbp = c("HH", "HL", "LH", "LL"),
   rna_conc = 10,
-  protein_conc = c(HH=10, HL=10, LH=1000, LL=1000),
+  protein_conc = c(HH=10, HL=10, LH=100, LL=100),
   metric = "density"
 )
 ```
-
-### Bubble Plot for Pairwise Comparison
-
-The `plotBubble()` function visualizes differences in binding between two RBPs 
-across simulated concentrations, with fixed RNA and other RBP concentrations:
-
-```{r scenario2-bubble, eval=FALSE}
-plotBubble(
-  results = res_grid,
-  rbp_x = "HH",
-  rbp_y = "LL",
-  roi_range = c(29, 33),
-  rna_conc = 10,
-  protein_conc = c(HL=0, LH=0),
-  metric = "density_fc",
-  colors = c("HH" = "skyblue", "LL" = "salmon")
-)
-```
-
-> **Note**: When visualizing binding for only specific RBPs, set the protein 
-> concentration of non-selected RBPs to 0.
 
 ### Competition Grid Plot
 
 The `plotGrid()` function focuses on changes in binding for one RBP across 
 different target RNA and competitor RBP concentrations:
 
-```{r scenario2-plot-grid, eval=FALSE}
+```{r scenario2-plot-grid}
 # First run a 2-RBP simulation for cleaner visualization
 rbp_models_2rbp <- rbp_models[c("HH", "LL")]
 
 res_grid_2rbp <- simulateGrid(
   sequence = seq,
   rbp_models = rbp_models_2rbp,
-  protein_conc_grid = list(HH = c(0, 10, 50, 100, 500), LL = c(0, 10, 50, 100, 500)),
-  rna_conc_grid = c(10, 50, 100, 500),
+  protein_conc_grid = list(HH = c(10, 50), LL = c(10, 50)),
+  rna_conc_grid = c(10),
   k = k_size,
-  parallel = TRUE
+  parallel = FALSE
 )
 
 plotGrid(
   results = res_grid_2rbp,
   rbp1 = "HH",
   rbp2 = "LL",
-  rbp1_concs = c(10, 50, 100, 500),
+  rbp1_concs = c(10, 50),
   roi_range = c(29, 33),
   metric = "density"
 )
@@ -402,17 +412,19 @@ from bioMart), RBPEqBind provides functions to load FASTA files directly. Note t
 binding simulation is performed on a sequence-by-sequence basis, not simultaneously 
 on all RNA sequences in the FASTA file.
 
-```{r scenario3-simulate, eval=FALSE}
+```{r scenario3-simulate}
 # Load sample FASTA from package
 fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 
-res_fasta <- simulateBindingF(
+res_fasta <- simulateBindingFasta(
   fasta_file = fasta_file,
   rbp_models = rbp_models,
   protein_concs = c(HH = 100, HL = 100, LH = 100, LL = 100),
   rna_conc = 10,
-  k = 5
+  k = 5,
+  parallel = FALSE
 )
+head(res_fasta)
 ```
 
 Visualization and result export are performed the same way as in Scenario 1.
@@ -421,22 +433,23 @@ Visualization and result export are performed the same way as in Scenario 1.
 
 RBPEqBind also supports concentration grid sweeps across sequences in a FASTA file:
 
-```{r scenario4-grid, eval=FALSE}
+```{r scenario4-grid}
 fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 
-res_grid_fasta <- simulateGridF(
+res_grid_fasta <- simulateGridFasta(
   fasta_file = fasta_file,
   rbp_models = rbp_models,
   protein_conc_grid = list(
-    HH = c(0, 100, 200, 500),
-    HL = c(0, 100, 200, 500),
-    LH = c(0, 100, 200, 500),
-    LL = c(0, 100, 200, 500)
+    HH = c(10, 100),
+    HL = c(10, 100),
+    LH = c(10, 100),
+    LL = c(10, 100)
   ),
   rna_conc_grid = c(10),
   k = 5,
-  parallel = TRUE
+  parallel = FALSE
 )
+head(res_grid_fasta)
 ```
 
 Visualization and export functions work the same as in Scenario 2.

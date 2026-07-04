@@ -1,24 +1,25 @@
 #' Call Peaks from Binding Simulation
 #'
 #' Identifies peak regions based on binding occupancy.
+#' If the transcript headers contain genomic coordinates (e.g. "chr1:1000-2000(+)"),
+#' it appends translated genomic coordinate columns (chrom, genomic_start, genomic_end, strand).
 #'
 #' @param results data.table of simulation results.
 #' @param rbp_primary Name of the primary RBP.
-#' @param rbp_reference Name of the reference RBP (for competitive advantage).
-#' @param method Method: "competitive", "local", or "global".
-#' @param threshold Threshold (ratio for competitive, occupancy for others).
-#' @param min_width Minimum width of peak to report.
+#' @param rbp_reference Name of the reference RBP (for competitive advantage) (default NULL).
+#' @param method Method: "competitive" (default), "local", or "global".
+#' @param threshold Threshold (ratio for competitive, occupancy for others) (default 2.0).
+#' @param min_width Minimum width of peak to report (default 3).
 #' @param window_size Window size for local background (default 50).
-#' @return A data.table of peaks with start, end, scores.
+#' @return A data.table of peaks with start, end, scores, and optionally genomic coordinates.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
-#' results <- simulateBinding("ACGUACGUACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
-#' results$transcript <- "test"
-#' peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.5)
-#' }
-#' @importFrom data.table frollmean
+#' results <- simulateBinding("ACGUACGUACGUUUUUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' results$transcript <- "test_transcript"
+#' peaks <- callPeaks(results, rbp_primary = "HH", method = "global", threshold = 1.1)
+#' head(peaks)
+#' @importFrom data.table frollmean copy rleid
 #' @export
 callPeaks <- function(results, rbp_primary, rbp_reference = NULL, 
                        method = c("competitive", "local", "global"),
@@ -46,8 +47,7 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
     # Calculate rolling mean background
     # Need to group by transcript
     dt[, bg := data.table::frollmean(get(rbp_primary), n = window_size, align = "center", fill = NA), by = group_col]
-    # Handle edges? fill=NA leaves NA.
-    # Replace NA with global mean or 0?
+    # Handle edges
     dt[is.na(bg), bg := mean(get(rbp_primary), na.rm=TRUE), by = group_col]
     
     dt[, score := get(rbp_primary) / (bg + 1e-6)]
@@ -61,8 +61,32 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
   # Identify peaks
   dt[, is_peak := score > threshold]
   
+  if (!any(dt$is_peak, na.rm = TRUE)) {
+    out <- data.table::data.table(
+      placeholder = character(),
+      start = integer(),
+      end = integer(),
+      length = integer(),
+      max_score = numeric(),
+      mean_score = numeric()
+    )
+    setnames(out, "placeholder", group_col)
+    
+    # Check if we should add empty genomic columns
+    if (nrow(results) > 0) {
+      sample_name <- results[[group_col]][1]
+      parsed <- parseGenomicHeader(sample_name)
+      if (!is.null(parsed)) {
+        out$chrom <- character()
+        out$genomic_start <- integer()
+        out$genomic_end <- integer()
+        out$strand <- character()
+      }
+    }
+    return(out)
+  }
+  
   # Run-length encoding to merge
-  # data.table way: grouping by consecutive TRUEs
   dt[, cluster := rleid(is_peak), by = group_col]
   
   peaks <- dt[is_peak == TRUE, .(
@@ -73,15 +97,42 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
     mean_score = mean(score)
   ), by = c(group_col, "cluster")]
   
-  # Filter width
+  peaks[, cluster := NULL]
+  
+  # Filter by min_width
   peaks <- peaks[length >= min_width]
   
-  # Format output
-  # BED-like: start is 0-based? results usually 1-based pos.
-  # Let's keep 1-based for now or follow R convention.
-  # The user API spec usually implies 1-based unless exporting to BED.
+  # Try to parse genomic coordinates from transcript name
+  parsed_headers <- lapply(peaks[[group_col]], parseGenomicHeader)
+  is_genomic <- !vapply(parsed_headers, is.null, logical(1))
   
-  peaks[, cluster := NULL]
+  if (any(is_genomic)) {
+    chroms <- character(nrow(peaks))
+    g_starts <- integer(nrow(peaks))
+    g_ends <- integer(nrow(peaks))
+    strands <- character(nrow(peaks))
+    
+    for (i in seq_len(nrow(peaks))) {
+      p <- parsed_headers[[i]]
+      if (!is.null(p)) {
+        chroms[i] <- p$chrom
+        strands[i] <- p$strand
+        if (p$strand == "-") {
+          g_starts[i] <- p$end - peaks$end[i] + 1
+          g_ends[i] <- p$end - peaks$start[i] + 1
+        } else {
+          g_starts[i] <- p$start + peaks$start[i] - 1
+          g_ends[i] <- p$start + peaks$end[i] - 1
+        }
+      } else {
+        chroms[i] <- NA_character_
+        g_starts[i] <- NA_integer_
+        g_ends[i] <- NA_integer_
+        strands[i] <- NA_character_
+      }
+    }
+    peaks[, `:=`(chrom = chroms, genomic_start = g_starts, genomic_end = g_ends, strand = strands)]
+  }
   
   return(peaks)
 }

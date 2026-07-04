@@ -27,8 +27,17 @@ Invisibly returns NULL. Called for side effect of writing file.
 Exports simulation results to JSON or CSV.
 }
 \examples{
-if (FALSE) {
-exportResults(results, "output.json", format = "json")
-exportResults(results, "output.csv", format = "csv")
-}
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+
+# Export JSON
+tmp_json <- tempfile(fileext = ".json")
+exportResults(results, tmp_json, format = "json")
+unlink(tmp_json)
+
+# Export CSV
+tmp_csv <- tempfile(fileext = ".csv")
+exportResults(results, tmp_csv, format = "csv")
+unlink(tmp_csv)
 }

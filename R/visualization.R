@@ -4,29 +4,25 @@
 #'
 #' @param results data.table of simulation results.
 #' @param rbp Character vector of RBP names to plot.
-#' @param transcript Optional transcript name to filter.
-#' @param metric Type of metric: "occupancy", "density", "density_fc", or "occupancy_fc".
-#' @param ylim Optional y-axis limits.
-#' @param xlim Optional x-axis limits.
-#' @param xaxis_type Type of x-axis labels: "nucleotide", "position", or "both".
-#' @param rna_conc Optional numeric. Filter by RNA concentration.
-#' @param protein_conc Optional named numeric vector. Filter by protein concentration.
-#' @param window Optional integer. Applies K-mer sliding window average.
+#' @param transcript Optional transcript name to filter (default NULL).
+#' @param metric Type of metric: "occupancy" (default), "density", "density_fc", or "occupancy_fc".
+#' @param ylim Optional y-axis limits (default NULL).
+#' @param xlim Optional x-axis limits (default NULL).
+#' @param xaxis_type Type of x-axis labels: "nucleotide" (default), "position", or "both".
+#' @param rna_conc Optional numeric. Filter by RNA concentration (default NULL).
+#' @param protein_conc Optional named numeric vector. Filter by protein concentration (default NULL).
+#' @param window Optional integer. Applies K-mer sliding window average (default NULL).
 #' @return A ggplot object.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' results$transcript <- "test_transcript"
 #' plotBinding(results, rbp = c("HH", "HL"))
-#' }
 #' @export
 plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy", "density", "density_fc", "occupancy_fc"), 
                          ylim = NULL, xlim = NULL, xaxis_type = c("nucleotide", "position", "both"),
                          rna_conc = NULL, protein_conc = NULL, window = NULL) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 needed for this function to work. Please install it.")
-  }
   
   metric <- match.arg(metric)
   xaxis_type <- match.arg(xaxis_type)
@@ -106,7 +102,7 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
         subset_data <- data[pos >= start_pos & pos <= end_pos]
         avg_val <- mean(subset_data[[col]], na.rm = TRUE)
         kmer <- substr(full_seq, j, j + window - 1)
-        windowed_list[[length(windowed_list) + 1]] <- data.table(
+        windowed_list[[length(windowed_list) + 1]] <- data.table::data.table(
           pos = start_pos,
           RBP = r,
           Value = avg_val,
@@ -183,29 +179,25 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
 #' Plots a heatmap of binding for multiple RBPs.
 #'
 #' @param results data.table of simulation results.
-#' @param rbps Optional vector of RBP names.
-#' @param transcript Transcript name to filter.
-#' @param metric Type of metric: "occupancy", "density", "density_fc", or "occupancy_fc".
-#' @param zlim Optional numeric vector for color scale limits.
-#' @param xlim Optional x-axis limits.
-#' @param xaxis_type Type of x-axis labels: "nucleotide", "position", or "both".
-#' @param window Optional integer for K-mer sliding window average.
+#' @param rbps Optional vector of RBP names to include (default NULL, infers all).
+#' @param transcript Transcript name to filter (required).
+#' @param metric Type of metric: "occupancy" (default), "density", "density_fc", or "occupancy_fc".
+#' @param zlim Optional numeric vector for color scale limits (default NULL).
+#' @param xlim Optional x-axis limits (default NULL).
+#' @param xaxis_type Type of x-axis labels: "nucleotide" (default), "position", or "both".
+#' @param window Optional integer for K-mer sliding window average (default NULL).
 #' @return A ggplot object.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
-#' rbp_models <- setModel(loadModel(model_file))
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
-#' plotHeatmap(results, transcript = NULL)
-#' }
+#' results$transcript <- "test_transcript"
+#' plotHeatmap(results, transcript = "test_transcript")
 #' @export
 plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL, 
                          xaxis_type = c("nucleotide", "position", "both"),
                          metric = c("occupancy", "density", "density_fc", "occupancy_fc"),
                          window = NULL, zlim = NULL) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 needed for this function to work. Please install it.")
-  }
   
   xaxis_type <- match.arg(xaxis_type)
   metric <- match.arg(metric)
@@ -261,7 +253,7 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
         subset_data <- data[pos >= start_pos & pos <= end_pos]
         avg_val <- mean(subset_data[[col]], na.rm = TRUE)
         kmer <- substr(full_seq, j, j + window - 1)
-        windowed_list[[length(windowed_list) + 1]] <- data.table(
+        windowed_list[[length(windowed_list) + 1]] <- data.table::data.table(
           pos = start_pos, RBP = r, Value = avg_val, kmer = kmer
         )
       }
@@ -311,20 +303,24 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
 #' @param results data.table from simulateGrid.
 #' @param rbp1 Name of first RBP (subdivides each cell).
 #' @param rbp2 Name of second RBP (X-axis).
-#' @param rbp1_concs Optional vector of RBP1 concentrations to include.
+#' @param rbp1_concs Optional vector of RBP1 concentrations to include (default NULL).
 #' @param roi_range Numeric vector (start, end) for region of interest.
-#' @param metric "occupancy", "density", "density_fc", or "occupancy_fc".
+#' @param metric "occupancy" (default), "density", "density_fc", or "occupancy_fc".
 #' @return A ggplot object.
 #' @examples
-#' if (FALSE) {
-#' # See vignette for full grid simulation example
-#' plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
-#' }
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateGrid(
+#'   sequence = "ACGUACGU",
+#'   rbp_models = rbp_models,
+#'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
+#'   rna_conc_grid = 10,
+#'   parallel = FALSE
+#' )
+#' plotGrid(results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 8))
 #' @export
 plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "density", "density_fc", "occupancy_fc"),
                       rbp1_concs = NULL) {
-  
-  if (!requireNamespace("ggplot2", quietly = TRUE)) stop("ggplot2 required")
   
   metric <- match.arg(metric)
   
@@ -371,7 +367,7 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
   n_rbp2 <- length(rbp2_vals)
   
   # Create tile coordinates
-  tile_data <- data.table()
+  tile_data <- data.table::data.table()
   
   for (i in seq_along(rna_vals)) {
     for (j in seq_along(rbp2_vals)) {
@@ -385,7 +381,7 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
         x_center <- j + (k - 0.5) * tile_width - 0.5
         y_center <- i
         
-        tile_data <- rbind(tile_data, data.table(
+        tile_data <- rbind(tile_data, data.table::data.table(
           x = x_center, y = y_center,
           width = tile_width * 0.9, height = 0.9,
           value = val, rbp1_conc = rbp1_vals[k], rbp2_conc = rbp2_vals[j], rna = rna_vals[i]
@@ -416,292 +412,25 @@ plotGrid <- function(results, rbp1, rbp2, roi_range, metric = c("occupancy", "de
   return(p)
 }
 
-#' Plot Competition Bubble (Split-Dot)
-#'
-#' Visualizes competitive binding between two RBPs using split-dot bubbles.
-#'
-#' @param results data.table from simulateGrid.
-#' @param rbp_x Name of first RBP (one half of split dot).
-#' @param rbp_y Name of second RBP (other half of split dot).
-#' @param roi_range Numeric vector (start, end) for region of interest.
-#' @param rna_conc RNA concentration to filter.
-#' @param protein_conc Named numeric vector to filter other protein concentrations.
-#' @param metric "occupancy", "density", "density_fc", or "occupancy_fc".
-#' @param scale_factor Scaling factor for bubble size (default 0.4).
-#' @param colors Named vector of colors for the RBPs.
-#' @param legend_breaks Numeric vector of values to show in size legend.
-#' @return A ggplot object.
-#' @examples
-#' if (FALSE) {
-#' # See vignette for bubble plot example
-#' plotBubble(grid_results, rbp_x = "HH", rbp_y = "HL", roi_range = c(1, 20))
-#' }
-#' @export
-plotBubble <- function(results, rbp_x, rbp_y, roi_range, rna_conc = NULL, 
-                        protein_conc = NULL,
-                        metric = c("occupancy", "density", "density_fc", "occupancy_fc"),
-                        scale_factor = 0.4, colors = NULL,
-                        legend_breaks = NULL) {
-  
-  if (!requireNamespace("ggplot2", quietly = TRUE)) stop("ggplot2 required")
-  
-  metric <- match.arg(metric)
-  
-  # Determine value columns based on metric
-  if (metric == "occupancy") {
-    col_x <- rbp_x
-    col_y <- rbp_y
-    metric_title <- "Occupancy"
-  } else if (metric == "density") {
-    col_x <- paste0(rbp_x, "_density")
-    col_y <- paste0(rbp_y, "_density")
-    metric_title <- "Density"
-  } else if (metric == "density_fc") {
-    col_x <- paste0(rbp_x, "_density_fc")
-    col_y <- paste0(rbp_y, "_density_fc")
-    metric_title <- "Density FC"
-  } else {
-    col_x <- paste0(rbp_x, "_occupancy_fc")
-    col_y <- paste0(rbp_y, "_occupancy_fc")
-    metric_title <- "Occupancy FC"
-  }
-  
-  # Filter by ROI
-  dt <- results[pos >= roi_range[1] & pos <= roi_range[2]]
-  
-  # Filter by RNA concentration
-  if (!is.null(rna_conc)) {
-    target_rna <- rna_conc
-    dt <- dt[rna_conc == target_rna]
-  } else if ("rna_conc" %in% names(dt)) {
-    if (length(unique(dt$rna_conc)) > 1) {
-      stop("Multiple RNA concentrations found. Please specify 'rna_conc'.")
-    }
-  }
-  
-  # Filter by other protein concentrations
-  if (!is.null(protein_conc)) {
-    for (p_name in names(protein_conc)) {
-      col <- paste0("Conc_", p_name)
-      val <- protein_conc[[p_name]]
-      if (col %in% names(dt)) {
-        dt <- dt[get(col) == val]
-      }
-    }
-  }
-  
-  # Get concentration columns for X and Y axes
-  conc_col_x <- paste0("Conc_", rbp_x)
-  conc_col_y <- paste0("Conc_", rbp_y)
-  
-  if (!all(c(conc_col_x, conc_col_y, col_x, col_y) %in% names(dt))) {
-    stop("Required columns not found. Need: ", conc_col_x, " ", conc_col_y, " ", col_x, " ", col_y)
-  }
-  
-  # Aggregate: average metric values within ROI
-  agg <- dt[, .(
-    Val_X = mean(get(col_x), na.rm=TRUE),
-    Val_Y = mean(get(col_y), na.rm=TRUE)
-  ), by = c(conc_col_x, conc_col_y)]
-  
-  # Get unique concentrations
-  x_vals <- sort(unique(agg[[conc_col_x]]))
-  y_vals <- sort(unique(agg[[conc_col_y]]))
-  
-  # Map to grid indices
-  agg$x_idx <- match(agg[[conc_col_x]], x_vals)
-  agg$y_idx <- match(agg[[conc_col_y]], y_vals)
-  
-  # Create arc data for split dots
-  make_arc <- function(cx, cy, r, start_rad, end_rad, n_points=20) {
-    if (r < 1e-6) return(NULL)
-    theta <- seq(start_rad, end_rad, length.out = n_points)
-    data.frame(x = cx + r * cos(theta), y = cy + r * sin(theta))
-  }
-  
-  # Build polygon data
-  poly_data <- data.table()
-  counter <- 1
-  
-  # Get max values for scaling
-  max_val <- max(c(agg$Val_X, agg$Val_Y), na.rm=TRUE)
-  if (max_val <= 0) max_val <- 1
-  
-  for (i in seq_len(nrow(agg))) {
-    cx <- agg$x_idx[i]
-    cy <- agg$y_idx[i]
-    
-    # Scale radius by value (handle NA values)
-    val_x <- agg$Val_X[i]
-    val_y <- agg$Val_Y[i]
-    r_x <- if (!is.na(val_x) && val_x > 0) sqrt(val_x / max_val) * scale_factor else 0
-    r_y <- if (!is.na(val_y) && val_y > 0) sqrt(val_y / max_val) * scale_factor else 0
-    
-    # Bottom-right arc (RBP X): -pi/4 to 3*pi/4
-    if (r_x > 1e-6) {
-      arc_x <- make_arc(cx, cy, r_x, -pi/4, 3*pi/4)
-      arc_x <- rbind(data.frame(x=cx, y=cy), arc_x)
-      arc_x$group <- counter
-      arc_x$RBP <- rbp_x
-      arc_x$value <- val_x
-      poly_data <- rbind(poly_data, arc_x)
-      counter <- counter + 1
-    }
-    
-    # Top-left arc (RBP Y): 3*pi/4 to 7*pi/4
-    if (r_y > 1e-6) {
-      arc_y <- make_arc(cx, cy, r_y, 3*pi/4, 7*pi/4)
-      arc_y <- rbind(data.frame(x=cx, y=cy), arc_y)
-      arc_y$group <- counter
-      arc_y$RBP <- rbp_y
-      arc_y$value <- val_y
-      poly_data <- rbind(poly_data, arc_y)
-      counter <- counter + 1
-    }
-  }
-  
-  # Default colors
-  if (is.null(colors)) {
-    colors <- c("skyblue", "salmon")
-    names(colors) <- c(rbp_x, rbp_y)
-  }
-  
-  # Extract ROI sequence for subtitle
-  if ("nt" %in% names(results)) {
-    seq_dt <- unique(results[pos >= roi_range[1] & pos <= roi_range[2], .(pos, nt)])
-    setkey(seq_dt, pos)
-    roi_seq <- paste(seq_dt$nt, collapse = "")
-  } else {
-    roi_seq <- ""
-  }
-  
-  # Create size legend data - position to the right of the main plot
-  n_x <- length(x_vals)
-  n_y <- length(y_vals)
-  
-  # Use custom legend breaks if provided, otherwise default to 25/50/75/100%
-  if (!is.null(legend_breaks)) {
-    legend_vals <- legend_breaks
-  } else {
-    legend_vals <- c(0.25, 0.5, 0.75, 1.0) * max_val
-  }
-  
-  legend_radii <- sqrt(legend_vals / max_val) * scale_factor
-  max_radius <- max(legend_radii)
-  
-  # Position legend left edge (where title starts)
-  legend_left_edge <- n_x + 1.2  # Start beyond plot edge with buffer
-  
-  # Position legend circles within the y-axis range
-  legend_y_spacing <- max(1, (n_y - 1) / (length(legend_vals) + 1))
-  legend_y_positions <- 1 + legend_y_spacing * (seq_along(legend_vals))
-  
-  # Build circles - left edge of each circle aligns with legend_left_edge
-  legend_circles <- data.table()
-  for (i in seq_along(legend_vals)) {
-    theta <- seq(0, 2*pi, length.out = 30)
-    # Center x = left_edge + radius, so left edge of circle = left_edge
-    circle_center_x <- legend_left_edge + legend_radii[i]
-    circle <- data.frame(
-      x = circle_center_x + legend_radii[i] * cos(theta),
-      y = legend_y_positions[i] + legend_radii[i] * sin(theta),
-      group = 1000 + i,
-      RBP = "legend",
-      value = legend_vals[i]
-    )
-    legend_circles <- rbind(legend_circles, circle)
-  }
-  
-  # Legend labels - position to the right of the largest circle
-  legend_labels <- data.frame(
-    x = legend_left_edge + 2 * max_radius + 0.3,  # Right of largest circle
-    y = legend_y_positions,
-    label = round(legend_vals, 3)
-  )
-  
-  # Position title above the legend circles, left-aligned with left edge
-  legend_title_y <- max(legend_y_positions) + legend_y_spacing * 0.6
-  legend_title_df <- data.frame(
-    x = legend_left_edge,  # Aligned with left edge of circles
-    y = legend_title_y,
-    label = metric_title
-  )
-  
-  # Build subtitle
-  subtitle_parts <- c(roi_seq, paste("\nROI:", roi_range[1], "-", roi_range[2]))
-  if (!is.null(rna_conc)) subtitle_parts <- c(subtitle_parts, paste("| RNA:", rna_conc, "nM"))
-  if (!is.null(protein_conc)) {
-    fixed_str <- paste(names(protein_conc), "=", protein_conc, collapse = ", ")
-    subtitle_parts <- c(subtitle_parts, paste("| Fixed:", fixed_str))
-  }
-  
-  # Combine main plot data with legend circles
-  all_poly <- rbind(poly_data, legend_circles, fill = TRUE)
-  
-  # Plot: use coord_fixed to maintain aspect ratio (circles stay circular)
-  p <- ggplot2::ggplot(all_poly, ggplot2::aes(x = x, y = y, fill = RBP, group = group)) +
-    ggplot2::geom_polygon(alpha = 0.8, color = "black", linewidth = 0.2) +
-    # Color scale: include legend color but filter it from the color legend display
-    ggplot2::scale_fill_manual(
-      values = c(colors, "legend" = "gray80"),
-      breaks = c(rbp_x, rbp_y),
-      name = "RBP"
-    ) +
-    # Add legend value labels
-    ggplot2::geom_text(data = legend_labels, 
-                       ggplot2::aes(x = x, y = y, label = label),
-                       hjust = 0, size = 3, inherit.aes = FALSE) +
-    # Add legend title
-    ggplot2::geom_text(data = legend_title_df, 
-                       ggplot2::aes(x = x, y = y, label = label),
-                       fontface = "bold", size = 3.5, hjust = 0, inherit.aes = FALSE) +
-    ggplot2::scale_x_continuous(breaks = seq_len(n_x), labels = x_vals,
-                                 name = paste("Concentration", rbp_x, "(nM)")) +
-    ggplot2::scale_y_continuous(breaks = seq_len(n_y), labels = y_vals,
-                                 name = paste("Concentration", rbp_y, "(nM)")) +
-    # coord_fixed maintains aspect ratio (circles stay circular), clip="off" allows legend outside
-    ggplot2::coord_fixed(ratio = 1, xlim = c(0.5, n_x + 0.5), ylim = c(0.5, n_y + 0.5), clip = "off") +
-    ggplot2::labs(
-      title = paste("Competitive Binding:", rbp_x, "vs", rbp_y, "-", metric_title),
-      subtitle = paste(subtitle_parts, collapse = " ")
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      axis.text = ggplot2::element_text(size = 12),
-      axis.title = ggplot2::element_text(size = 14, face = 'bold'),
-      legend.position = "bottom",
-      panel.grid = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(t = 10, r = 150, b = 10, l = 10)
-    )
-  
-  return(p)
-}
-
-
 #' View Model Affinity Distributions
 #'
 #' Creates a histogram of Kd or Ka distributions for RBP models.
 #'
 #' @param rbp_models Named list of RBP model data.tables (from setModel).
-#' @param rbp Character vector of RBP names to plot. If NULL, plots all.
-#' @param metric Display metric: "Kd" or "Ka" (affinity = 1/Kd).
+#' @param rbp Character vector of RBP names to plot (default NULL, plots all).
+#' @param metric Display metric: "Kd" (default) or "Ka" (affinity = 1/Kd).
 #' @param bins Number of histogram bins (default 50).
-#' @param colors Named vector of colors per RBP. If NULL, uses default palette.
+#' @param colors Named vector of colors per RBP (default NULL, uses Okabe-Ito palette).
 #' @param alpha Transparency of histogram bars (default 0.5).
 #' @param log_scale Logical, use log10 scale for x-axis (default FALSE).
 #' @return A ggplot object.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file))
 #' viewModel(rbp_models, metric = "Kd")
-#' }
 #' @export
 viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
                          bins = 50, colors = NULL, alpha = 0.5, log_scale = FALSE) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("ggplot2 needed for this function to work. Please install it.")
-  }
   
   metric <- match.arg(metric)
   
@@ -718,14 +447,8 @@ viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
   plot_data <- data.table::rbindlist(lapply(rbp, function(r) {
     model <- rbp_models[[r]]
     
-    # Handle both raw models (score) and processed models (Kd)
     if ("Kd" %in% names(model)) {
-      # Processed model
-      if (metric == "Ka") {
-        val <- 1 / model$Kd
-      } else {
-        val <- model$Kd
-      }
+      val <- if (metric == "Kd") model$Kd else 1 / model$Kd
     } else if ("score" %in% names(model)) {
       # Raw model - score is already normalized relative affinity
       val <- model$score
@@ -741,8 +464,8 @@ viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
   
   # Default colors if not provided
   if (is.null(colors)) {
-    default_palette <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", 
-                         "#FFFF33", "#A65628", "#F781BF", "#999999")
+    # Use Okabe-Ito colorblind-friendly palette (Okabe & Ito, 2008)
+    default_palette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
     colors <- setNames(rep_len(default_palette, length(rbp)), rbp)
   }
   

@@ -1,14 +1,11 @@
-#' Feature Scaling
-#'
-#' Scales a numeric vector to a given range [MIN, MAX].
-#'
-#' @param X Numeric vector to scale.
-#' @param MAX Maximum value of the new range.
-#' @param MIN Minimum value of the new range.
-#' @return Scaled numeric vector.
-#' @examples
-#' featureScale(1:10, MAX = 100, MIN = 1)
-#' @export
+# Feature Scaling
+#
+# Scales a numeric vector to a given range [MIN, MAX].
+#
+# @param X Numeric vector to scale.
+# @param MAX Maximum value of the new range.
+# @param MIN Minimum value of the new range.
+# @return Scaled numeric vector.
 featureScale <- function(X, MAX, MIN) {
   if (MAX <= MIN) {
     stop("MAX must be greater than MIN")
@@ -52,16 +49,13 @@ generateRNA <- function(L, A = 0.25, G = 0.25, C = 0.25, U = 0.25) {
 # K-mer Functions
 # ==============================================================================
 
-#' Extract K-mers from Sequence
-#'
-#' Generates a vector of all k-mers from a given sequence using a sliding window.
-#'
-#' @param sequence Character string of the RNA sequence.
-#' @param k Integer size of the k-mer (default 5).
-#' @return Character vector of k-mers.
-#' @examples
-#' extractKmers("ACGUACGU", k = 3)
-#' @export
+# Extract K-mers from Sequence
+#
+# Generates a vector of all k-mers from a given sequence using a sliding window.
+#
+# @param sequence Character string of the RNA sequence.
+# @param k Integer size of the k-mer (default 5).
+# @return Character vector of k-mers.
 extractKmers <- function(sequence, k = 5) {
   if (nchar(sequence) < k) {
     return(character(0))
@@ -72,18 +66,35 @@ extractKmers <- function(sequence, k = 5) {
   substring(sequence, starts, ends)
 }
 
-#' Count Unique K-mers
-#'
-#' Returns a data.table with unique k-mers and their counts.
-#'
-#' @param kmers Character vector of k-mers.
-#' @return data.table with columns 'motif' and 'count'.
-#' @examples
-#' kmers <- extractKmers("ACGUACGU", k = 3)
-#' countKmers(kmers)
-#' @importFrom data.table data.table
-#' @export
+# Count Unique K-mers
+#
+# Returns a data.table with unique k-mers and their counts.
+#
+# @param kmers Character vector of k-mers.
+# @return data.table with columns 'motif' and 'count'.
+# @importFrom data.table data.table
 countKmers <- function(kmers) {
   dt <- data.table::data.table(motif = kmers)
   dt[, .(count = .N), by = motif]
+}
+
+#' Parse Genomic Coordinates from FASTA Header
+#'
+#' Extracts genomic coordinates from a UCSC-style header string,
+#' e.g. "chr1:1000-2000" or "chr1:1000-2000(-)".
+#'
+#' @param h Character string.
+#' @return A list with chrom, start, end, and strand, or NULL.
+parseGenomicHeader <- function(h) {
+  if (is.null(h) || length(h) != 1 || is.na(h)) return(NULL)
+  m <- regexec("^([^:]+):([0-9]+)-([0-9]+)(?:\\(([+-])\\))?$", h)
+  reg_match <- regmatches(h, m)[[1]]
+  if (length(reg_match) >= 5) {
+    chrom <- reg_match[2]
+    start_coord <- as.integer(reg_match[3])
+    end_coord <- as.integer(reg_match[4])
+    strand <- if (reg_match[5] != "") reg_match[5] else "+"
+    return(list(chrom = chrom, start = start_coord, end = end_coord, strand = strand))
+  }
+  return(NULL)
 }

@@ -22,9 +22,9 @@ plotGrid(
 
 \item{roi_range}{Numeric vector (start, end) for region of interest.}
 
-\item{metric}{"occupancy", "density", "density_fc", or "occupancy_fc".}
+\item{metric}{"occupancy" (default), "density", "density_fc", or "occupancy_fc".}
 
-\item{rbp1_concs}{Optional vector of RBP1 concentrations to include.}
+\item{rbp1_concs}{Optional vector of RBP1 concentrations to include (default NULL).}
 }
 \value{
 A ggplot object.
@@ -33,8 +33,14 @@ A ggplot object.
 Visualizes binding across a concentration grid.
 }
 \examples{
-if (FALSE) {
-# See vignette for full grid simulation example
-plotGrid(grid_results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 20))
-}
+model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+results <- simulateGrid(
+  sequence = "ACGUACGU",
+  rbp_models = rbp_models,
+  protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
+  rna_conc_grid = 10,
+  parallel = FALSE
+)
+plotGrid(results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 8))
 }

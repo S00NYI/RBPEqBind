@@ -22,21 +22,21 @@ plotBinding(
 
 \item{rbp}{Character vector of RBP names to plot.}
 
-\item{transcript}{Optional transcript name to filter.}
+\item{transcript}{Optional transcript name to filter (default NULL).}
 
-\item{metric}{Type of metric: "occupancy", "density", "density_fc", or "occupancy_fc".}
+\item{metric}{Type of metric: "occupancy" (default), "density", "density_fc", or "occupancy_fc".}
 
-\item{ylim}{Optional y-axis limits.}
+\item{ylim}{Optional y-axis limits (default NULL).}
 
-\item{xlim}{Optional x-axis limits.}
+\item{xlim}{Optional x-axis limits (default NULL).}
 
-\item{xaxis_type}{Type of x-axis labels: "nucleotide", "position", or "both".}
+\item{xaxis_type}{Type of x-axis labels: "nucleotide" (default), "position", or "both".}
 
-\item{rna_conc}{Optional numeric. Filter by RNA concentration.}
+\item{rna_conc}{Optional numeric. Filter by RNA concentration (default NULL).}
 
-\item{protein_conc}{Optional named numeric vector. Filter by protein concentration.}
+\item{protein_conc}{Optional named numeric vector. Filter by protein concentration (default NULL).}
 
-\item{window}{Optional integer. Applies K-mer sliding window average.}
+\item{window}{Optional integer. Applies K-mer sliding window average (default NULL).}
 }
 \value{
 A ggplot object.
@@ -45,10 +45,9 @@ A ggplot object.
 Plots the binding profile for one or more RBPs.
 }
 \examples{
-if (FALSE) {
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGUACGU", rbp_models, c(HH = 100, HL = 100))
+results$transcript <- "test_transcript"
 plotBinding(results, rbp = c("HH", "HL"))
-}
 }

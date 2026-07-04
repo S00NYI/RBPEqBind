@@ -8,10 +8,19 @@
 #' @param include_sequence Logical, include sequence in output (default TRUE).
 #' @return Invisibly returns NULL. Called for side effect of writing file.
 #' @examples
-#' if (FALSE) {
-#' exportResults(results, "output.json", format = "json")
-#' exportResults(results, "output.csv", format = "csv")
-#' }
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' 
+#' # Export JSON
+#' tmp_json <- tempfile(fileext = ".json")
+#' exportResults(results, tmp_json, format = "json")
+#' unlink(tmp_json)
+#' 
+#' # Export CSV
+#' tmp_csv <- tempfile(fileext = ".csv")
+#' exportResults(results, tmp_csv, format = "csv")
+#' unlink(tmp_csv)
 #' @importFrom jsonlite stream_out toJSON
 #' @importFrom data.table fwrite
 #' @export
@@ -46,6 +55,8 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
 #' Export BED format
 #'
 #' Simple BED export for ranges exceeding threshold.
+#' If the transcript headers contain genomic coordinates (e.g. "chr1:1000-2000(+)"),
+#' it translates transcript-relative peak coordinates into genomic coordinates.
 #'
 #' @param results data.table.
 #' @param output_file File path.
@@ -53,9 +64,13 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
 #' @param threshold Threshold for score/occupancy.
 #' @return Invisibly returns NULL. Called for side effect of writing BED file.
 #' @examples
-#' if (FALSE) {
-#' exportBed(results, "binding.bed", rbp = "HH", threshold = 0.5)
-#' }
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' results$transcript <- "test_transcript"
+#' tmp_bed <- tempfile(fileext = ".bed")
+#' exportBed(results, tmp_bed, rbp = "HH", threshold = 0.1)
+#' unlink(tmp_bed)
 #' @export
 exportBed <- function(results, output_file, rbp, threshold = 0) {
   # Need pos, transcript/seq_name
@@ -72,15 +87,6 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
     return()
   }
   
-  # Coordinate conversion: BED is 0-indexed, half-open.
-  # pos is 1-indexed.
-  # start = pos - 1
-  # end = pos
-  
-  # Naive export: one line per position?
-  # Better to merge adjacent
-  # Use GenomicRanges logic if available, or manual IRanges-like reduce using data.table
-  
   # Sort
   setkeyv(bed_dt, c(group_col, "pos"))
   
@@ -94,6 +100,35 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
                         name = paste0(rbp, "_peak"),
                         score = mean(get(rbp))), by = .(get(group_col), g)]
   
+  # Translate transcript coordinates to genomic coordinates if headers match UCSC style
+  parsed_headers <- lapply(regions$chrom, parseGenomicHeader)
+  is_genomic <- !vapply(parsed_headers, is.null, logical(1))
+  
+  if (any(is_genomic)) {
+    chroms <- character(nrow(regions))
+    starts <- integer(nrow(regions))
+    ends <- integer(nrow(regions))
+    
+    for (i in seq_len(nrow(regions))) {
+      p <- parsed_headers[[i]]
+      if (!is.null(p)) {
+        chroms[i] <- p$chrom
+        if (p$strand == "-") {
+          starts[i] <- p$end - regions$end[i]
+          ends[i] <- p$end - regions$start[i]
+        } else {
+          starts[i] <- p$start + regions$start[i] - 1
+          ends[i] <- p$start + regions$end[i] - 1
+        }
+      } else {
+        chroms[i] <- regions$chrom[i]
+        starts[i] <- regions$start[i]
+        ends[i] <- regions$end[i]
+      }
+    }
+    regions[, `:=`(chrom = chroms, start = starts, end = ends)]
+  }
+  
   # Select BED columns: chrom, start, end, name, score
   out <- regions[, .(chrom, start, end, name, score)]
   
@@ -101,21 +136,39 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
 }
 
 
-#' Import Results from JSON
+#' Import Results
 #'
-#' Reads previously exported simulation results from a JSON file.
+#' Reads previously exported simulation results from a JSON or CSV file.
 #'
-#' @param input_file Path to JSON file (exported by exportResults).
+#' @param input_file Path to JSON or CSV file (exported by exportResults).
 #' @return A data.table with the imported results.
 #' @examples
-#' if (FALSE) {
-#' results <- importResults("output.json")
-#' }
+#' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+#' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
+#' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' 
+#' # JSON Example
+#' tmp_json <- tempfile(fileext = ".json")
+#' exportResults(results, tmp_json, format = "json")
+#' results_json <- importResults(tmp_json)
+#' unlink(tmp_json)
+#' 
+#' # CSV Example
+#' tmp_csv <- tempfile(fileext = ".csv")
+#' exportResults(results, tmp_csv, format = "csv")
+#' results_csv <- importResults(tmp_csv)
+#' unlink(tmp_csv)
 #' @importFrom jsonlite stream_in fromJSON
-#' @importFrom data.table as.data.table rbindlist
+#' @importFrom data.table as.data.table rbindlist fread
 #' @export
 importResults <- function(input_file) {
   if (!file.exists(input_file)) stop("File not found: ", input_file)
+  
+  # Support CSV format directly
+  ext <- tolower(tools::file_ext(input_file))
+  if (ext == "csv") {
+    return(data.table::fread(input_file))
+  }
   
   # Try JSONL format first (stream_in)
   tryCatch({
@@ -176,24 +229,28 @@ importResults <- function(input_file) {
 #'
 #' Converts simulation results to a SummarizedExperiment object.
 #'
-#' @param results data.table from simulateBinding or simulateBindingF.
+#' @param results data.table from simulateBinding or simulateBindingFasta.
 #' @param rbp_models Optional named list of RBP models (for colData metadata).
 #' @return A SummarizedExperiment with assays and row/col metadata.
 #' @examples
-#' if (FALSE) {
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
+#' 
+#' # Create density columns for the mock results to enable makeSE
+#' results[, HH_density := HH / sum(HH)]
+#' results[, HL_density := HL / sum(HL)]
+#' results[, HH_density_fc := HH_density * 8]
+#' results[, HL_density_fc := HL_density * 8]
+#' results[, HH_occupancy_fc := HH / mean(HH)]
+#' results[, HL_occupancy_fc := HL / mean(HL)]
+#' 
 #' se <- makeSE(results, rbp_models)
-#' }
+#' se
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom S4Vectors DataFrame
 #' @export
 makeSE <- function(results, rbp_models = NULL) {
-  if (!requireNamespace("SummarizedExperiment", quietly = TRUE)) {
-    stop("SummarizedExperiment package required. Install with: BiocManager::install('SummarizedExperiment')")
-  }
-  
   # Identify RBP columns (those without suffix that have corresponding _density)
   all_cols <- names(results)
   density_cols <- grep("_density$", all_cols, value = TRUE)
