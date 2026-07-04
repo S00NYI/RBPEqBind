@@ -90,7 +90,7 @@ plotBinding <- function(results, rbp, transcript = NULL, metric = c("occupancy",
     full_seq <- paste(seq_dt$nt, collapse = "")
     n_pos <- nrow(seq_dt)
     
-    valid_starts <- seq_dt$pos[1:(n_pos - window + 1)]
+    valid_starts <- seq_dt$pos[seq_len(n_pos - window + 1)]
     
     windowed_list <- list()
     for (i in seq_along(rbp)) {
@@ -241,7 +241,7 @@ plotHeatmap <- function(results, transcript, rbps = NULL, xlim = NULL,
     setkey(seq_dt, pos)
     full_seq <- paste(seq_dt$nt, collapse = "")
     n_pos <- nrow(seq_dt)
-    valid_starts <- seq_dt$pos[1:(n_pos - window + 1)]
+    valid_starts <- seq_dt$pos[seq_len(n_pos - window + 1)]
     
     windowed_list <- list()
     for (i in seq_along(rbps)) {

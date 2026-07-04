@@ -61,7 +61,7 @@ extractKmers <- function(sequence, k = 5) {
     return(character(0))
   }
   n <- nchar(sequence)
-  starts <- 1:(n - k + 1)
+  starts <- seq_len(n - k + 1)
   ends <- k:n
   substring(sequence, starts, ends)
 }
