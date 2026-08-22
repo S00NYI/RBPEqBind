@@ -43,9 +43,9 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
       lens <- results[, .(length = .N), by = group_col]
       aggregated <- merge(aggregated, lens, by = group_col)
       setnames(aggregated, group_col, "name")
-      jsonlite::stream_out(aggregated, file(output_file), verbose = FALSE)
+      jsonlite::write_json(aggregated, output_file, auto_unbox = TRUE)
     } else {
-      jsonlite::write_json(results, output_file)
+      jsonlite::write_json(results, output_file, auto_unbox = TRUE)
     }
   } else if (format == "csv") {
     data.table::fwrite(results, output_file)
@@ -69,8 +69,10 @@ exportResults <- function(results, output_file, format = c("json", "csv"), inclu
 #' results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
 #' results$transcript <- "test_transcript"
 #' tmp_bed <- tempfile(fileext = ".bed")
-#' exportBed(results, tmp_bed, rbp = "HH", threshold = 0.1)
 #' unlink(tmp_bed)
+#' @importFrom rtracklayer export.bed
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
 #' @export
 exportBed <- function(results, output_file, rbp, threshold = 0) {
   # Need pos, transcript/seq_name
@@ -130,9 +132,14 @@ exportBed <- function(results, output_file, rbp, threshold = 0) {
   }
   
   # Select BED columns: chrom, start, end, name, score
-  out <- regions[, .(chrom, start, end, name, score)]
-  
-  data.table::fwrite(out, output_file, sep="\t", col.names=FALSE)
+  # Convert to GRanges object and export via rtracklayer::export.bed
+  gr <- GenomicRanges::GRanges(
+    seqnames = regions$chrom,
+    ranges = IRanges::IRanges(start = regions$start + 1, end = regions$end),
+    name = regions$name,
+    score = regions$score
+  )
+  rtracklayer::export.bed(gr, output_file)
 }
 
 
@@ -170,42 +177,28 @@ importResults <- function(input_file) {
     return(data.table::fread(input_file))
   }
   
-  # Try JSONL format first (stream_in)
+  # Read JSON
   tryCatch({
-    conn <- file(input_file, "r")
-    on.exit(close(conn))
+    raw <- jsonlite::fromJSON(input_file)
     
-    # Read as JSONL (one object per line)
-    raw <- jsonlite::stream_in(conn, verbose = FALSE)
-    
-    # If it has list columns (arrays), we need to expand them
-    if (!is.null(raw) && nrow(raw) > 0) {
-      # Check if any columns are lists (arrays from export)
+    if (is.data.frame(raw) && nrow(raw) > 0) {
       list_cols <- vapply(raw, is.list, logical(1))
       
       if (any(list_cols)) {
-        # Need to expand list columns to long format
-        # Get the RBP/metric columns that are lists
         rbp_cols <- names(list_cols)[list_cols]
         id_cols <- names(list_cols)[!list_cols]
         
-        # Expand each row
         results_list <- lapply(seq_len(nrow(raw)), function(i) {
           row <- raw[i, ]
           n_pos <- length(row[[rbp_cols[1]]][[1]])
           
           expanded <- data.table::data.table(pos = seq_len(n_pos))
-          
-          # Add ID columns
           for (col in id_cols) {
             expanded[[col]] <- row[[col]]
           }
-          
-          # Add RBP columns
           for (col in rbp_cols) {
             expanded[[col]] <- unlist(row[[col]])
           }
-          
           expanded
         })
         
@@ -218,8 +211,8 @@ importResults <- function(input_file) {
     return(data.table::as.data.table(raw))
     
   }, error = function(e) {
-    # Fall back to regular JSON
-    raw <- jsonlite::fromJSON(input_file)
+    # Fallback if needed
+    raw <- jsonlite::stream_in(file(input_file), verbose = FALSE)
     return(data.table::as.data.table(raw))
   })
 }

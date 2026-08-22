@@ -464,8 +464,7 @@ viewModel <- function(rbp_models, rbp = NULL, metric = c("Kd", "Ka"),
   
   # Default colors if not provided
   if (is.null(colors)) {
-    # Use Okabe-Ito colorblind-friendly palette (Okabe & Ito, 2008)
-    default_palette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
+    default_palette <- unname(grDevices::palette.colors(palette = "Okabe-Ito"))
     colors <- setNames(rep_len(default_palette, length(rbp)), rbp)
   }
   

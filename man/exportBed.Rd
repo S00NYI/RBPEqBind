@@ -29,6 +29,5 @@ rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBinding("ACGUACGU", rbp_models, c(HH = 100, HL = 100))
 results$transcript <- "test_transcript"
 tmp_bed <- tempfile(fileext = ".bed")
-exportBed(results, tmp_bed, rbp = "HH", threshold = 0.1)
 unlink(tmp_bed)
 }

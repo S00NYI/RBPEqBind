@@ -15,8 +15,11 @@ test_that("plotBinding returns ggplot object", {
   )
   
   p <- plotBinding(mock_result, rbp = "RBP1", transcript = "TX1")
-  
   expect_s3_class(p, "ggplot")
+  
+  if (requireNamespace("vdiffr", quietly = TRUE) && interactive()) {
+    vdiffr::expect_doppelganger("plotBinding-basic", p)
+  }
 })
 
 test_that("plotBinding accepts all metric types", {

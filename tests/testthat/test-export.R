@@ -163,6 +163,28 @@ test_that("importResults imports JSON and CSV files correctly", {
   expect_equal(imported_csv$RBP1, mock_result$RBP1)
 })
 
+test_that("exportResults and importResults work for multi-transcript FASTA outputs", {
+  fa_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
+  model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
+  rbp_models <- setModel(loadModel(model_file, rbp = "HH"))
+  
+  # Run simulation on multi-sequence FASTA
+  results <- simulateBindingFasta(fa_file, rbp_models, protein_concs = c(HH = 100))
+  
+  tmp_json <- tempfile(fileext = ".json")
+  on.exit(unlink(tmp_json), add = TRUE)
+  
+  # Export aggregated JSON
+  exportResults(results, tmp_json, format = "json")
+  expect_true(file.exists(tmp_json))
+  
+  # Import and verify roundtrip data structure
+  imported <- importResults(tmp_json)
+  expect_s3_class(imported, "data.table")
+  expect_true("transcript" %in% names(imported) || "name" %in% names(imported))
+  expect_true("HH" %in% names(imported))
+})
+
 test_that("exportBed handles genomic coordinates correctly", {
   # Mock genomic sequence header
   mock_result <- data.table::data.table(
