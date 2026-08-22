@@ -5,17 +5,25 @@
 <!-- badges: start -->
 [![R-CMD-check](https://img.shields.io/badge/R%20CMD%20check-passing-brightgreen)](https://github.com/S00NYI/RBPEqBind)
 [![License: GPL-3](https://img.shields.io/badge/License-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![R Version](https://img.shields.io/badge/R-%3E%3D%204.3-blue)](https://cran.r-project.org/)
+[![R Version](https://img.shields.io/badge/R-%3E%3D%204.6.0-blue)](https://cran.r-project.org/)
 <!-- badges: end -->
 
 **RBPEqBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) to RNA sequences using equilibrium binding kinetics.
 
 ## Installation
 
-### From GitHub (Development)
+### From Bioconductor (Recommended)
 
 ```r
-# Install devtools if needed
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("RBPEqBind")
+```
+
+### From GitHub (Development Version)
+
+```r
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 

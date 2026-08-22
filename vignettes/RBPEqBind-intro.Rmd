@@ -69,21 +69,15 @@ the system of equations with the constraint:
 
 $$[R_0] \geq [R_{eq}] \geq 0$$
 
-From the equilibrium concentrations, binding probability at each site ($p_{site}$) 
-is calculated as $[P_iR] / [R_0]$. Per-position probability ($p_{pos}$) is then 
-obtained by averaging overlapping $p_{site}$ values (up to $k$ overlaps per position).
+From the equilibrium concentrations, binding probability at each unique motif 
+site ($p_{site}$) is calculated as $[P_iR] / [R_{0,e}]$, where $[R_{0,e}] = n \times [R_0]$ 
+is the effective initial RNA concentration accounting for the motif multiplicity $n$ 
+in the transcript sequence. Per-position probability ($p_{pos}$) is then 
+obtained by averaging overlapping $p_{site}$ values across all $k$-mer windows covering each position.
 
-For RBP enrichment analysis, fold-change is calculated by comparing the proportion 
-of each RBP to a uniform distribution across the RNA sequence.
-
-### Simulation Initial Conditions
-
-For simulation purposes, the initial conditions are set so that all $[P_{i,0}]$ 
-are in excess of the target RNA $[R_0]$. For each binding site, the effective 
-initial RNA concentration needs to be determined, as a given binding site may 
-exist more than once in the RNA sequence. Thus, the effective initial concentration 
-of a binding site $[R_{0,e}]$ is calculated as $n \times [R_0]$, where $n$ is the 
-number of times the binding site motif appears in the RNA sequence.
+For RBP enrichment analysis:
+- With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.
+- With **multiple active RBPs**, fold-change represents the competitive ratio of self-occupancy relative to the sum of all other active competing RBPs at that position.
 
 ## Reference
 
