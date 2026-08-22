@@ -77,3 +77,21 @@ test_that("setModel accepts per-RBP affinity values", {
   expect_true("Kd" %in% names(result$HH))
   expect_true("Kd" %in% names(result$LL))
 })
+
+test_that("setModel rejects NA in score column", {
+  mock_na <- list(
+    RBP1 = data.table::data.table(
+      motif = c("AAAAA", "AAAAC"),
+      score = c(1.0, NA_real_)
+    )
+  )
+  expect_error(setModel(mock_na), "has NA scores")
+})
+
+test_that("setModel warns when named affinity vector omits an RBP", {
+  mock_raw <- list(
+    HH = data.table::data.table(motif = "AAAAA", score = 0.5),
+    LL = data.table::data.table(motif = "UUUUU", score = 0.5)
+  )
+  expect_warning(setModel(mock_raw, max_affinity = c(HH = 50)), "missing from named")
+})

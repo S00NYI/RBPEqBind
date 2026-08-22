@@ -90,3 +90,26 @@ test_that("callPeaks parses genomic coordinates from headers", {
   expect_equal(peaks_neg$genomic_start[1], 1997)
   expect_equal(peaks_neg$genomic_end[1], 1998)
 })
+
+test_that("callPeaks errors on duplicated positions (e.g. grid output)", {
+  grid_like <- data.table::data.table(
+    pos = c(1:5, 1:5),
+    nt = rep(c("A", "C", "G", "U", "A"), 2),
+    RBP1 = runif(10),
+    transcript = "TX1",
+    Conc_RBP1 = c(rep(10, 5), rep(100, 5))
+  )
+  expect_error(callPeaks(grid_like, rbp_primary = "RBP1"), "duplicated positions")
+})
+
+test_that("callPeaks local background falls back to transcript mean on edges", {
+  dt <- data.table::data.table(
+    pos = seq_len(10),
+    nt = rep("A", 10),
+    RBP1 = c(rep(0.1, 8), 0.9, 0.9),
+    transcript = "TX1"
+  )
+  peaks <- callPeaks(dt, rbp_primary = "RBP1", method = "local", threshold = 1.2, min_width = 1, window_size = 20)
+  expect_s3_class(peaks, "data.table")
+  expect_true(nrow(peaks) >= 1)
+})

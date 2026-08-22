@@ -11,6 +11,9 @@ solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
   if (length(protein_totals) != length(Kds)) {
     stop("Length of protein_totals and Kds must match.")
   }
+  if (anyNA(protein_totals) || anyNA(Kds)) {
+    stop("protein_totals and Kds must not contain NA")
+  }
   if (RNA_total < 0) stop("RNA_total must be non-negative")
   if (any(protein_totals < 0)) stop("protein_totals must be non-negative")
   if (any(Kds <= 0)) stop("Kds must be positive")
@@ -22,23 +25,23 @@ solveEquilibrium <- function(RNA_total, protein_totals, Kds) {
   # X = FreeRNA
   # Equation: X - RNA_total + sum( (P_tot * X) / (Kd + X) ) = 0
   obj_func <- function(X) {
-    bound_sum <- sum((protein_totals * X) / (Kds + X))
+    bound_sum <- sum(calcBoundProtein(X, protein_totals, Kds))
     return(X - RNA_total + bound_sum)
   }
   
-  # Root finding
-  # Lower bound: 0
-  # Upper bound: RNA_total (Free RNA cannot exceed Total RNA)
-  # Check boundaries
-  f_lower <- obj_func(0) # -RNA_total < 0
-  f_upper <- obj_func(RNA_total) # sum(...) > 0, so f_upper > 0
+  # f(0) = -RNA_total < 0 always. If f(RNA_total) <= 0 there is no interior
+  # root (no protein, or all Kd infinite): all RNA is free.
+  if (obj_func(RNA_total) <= 0) return(RNA_total)
   
-  if (f_lower == 0) return(0)
-  if (f_upper == 0) return(RNA_total)
+  # Solve in log space for scale invariance across physiological concentration ranges
+  hi <- log(RNA_total)
+  lo <- max(hi - log(1e18), log(.Machine$double.xmin))
+  if (obj_func(exp(lo)) > 0) return(exp(lo))
   
-# Use uniroot with a standard tolerance of 1e-5 to balance precision and speed
-  result <- stats::uniroot(obj_func, interval = c(0, RNA_total), tol = 1e-5)
-  return(result$root)
+  result <- stats::uniroot(function(u) obj_func(exp(u)),
+                           interval = c(lo, hi),
+                           tol = .Machine$double.eps^0.5)
+  return(exp(result$root))
 }
 
 # Calculate Bound Concentrations

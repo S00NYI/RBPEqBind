@@ -88,12 +88,18 @@ loadModel <- function(file, k = NULL, rbp = NULL) {
 #' @export
 setModel <- function(models, max_affinity = 100, min_affinity = 0.00001) {
   
-  get_value <- function(vec, name, default) {
+  get_value <- function(vec, name, default, arg_name = "affinity") {
     if (length(vec) == 1 && is.null(names(vec))) {
       return(vec)
     }
-    if (!is.null(names(vec)) && name %in% names(vec)) {
-      return(vec[name])
+    if (!is.null(names(vec))) {
+      if (name %in% names(vec)) {
+        return(vec[[name]])
+      } else {
+        warning("RBP '", name, "' is missing from named ", arg_name, 
+                "; defaulting to ", default)
+        return(default)
+      }
     }
     return(default)
   }
@@ -106,9 +112,14 @@ setModel <- function(models, max_affinity = 100, min_affinity = 0.00001) {
       stop("Model ", name, " must have 'motif' and 'score' columns.")
     }
     
+    if (anyNA(model$score)) {
+      stop("Model ", name, " has NA scores for motif(s): ",
+           paste(utils::head(model$motif[is.na(model$score)]), collapse = ", "))
+    }
+    
     dt <- data.table::copy(model)
-    current_max <- get_value(max_affinity, name, 100)
-    current_min <- get_value(min_affinity, name, 0.00001)
+    current_max <- get_value(max_affinity, name, 100, "max_affinity")
+    current_min <- get_value(min_affinity, name, 0.00001, "min_affinity")
     
     # Scale score to Ka range
     if (diff(range(dt$score, na.rm = TRUE)) == 0) {

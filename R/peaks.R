@@ -32,6 +32,14 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
   group_col <- if ("transcript" %in% names(results)) "transcript" else if ("seq_name" %in% names(results)) "seq_name" else NULL
   if (is.null(group_col)) stop("No transcript column found")
   
+  # Peak calling assumes one condition per transcript. Grid output repeats `pos`
+  # per grid point, which would merge runs across conditions and pool backgrounds.
+  if (anyDuplicated(results[, c(group_col, "pos"), with = FALSE])) {
+    stop("`results` contains duplicated positions per ", group_col,
+         ". callPeaks() expects a single condition; subset simulateGrid() output ",
+         "by its Conc_* / rna_conc columns and call peaks on each condition.")
+  }
+  
   # Copy data to avoid modification
   dt <- copy(results)
   
@@ -47,8 +55,10 @@ callPeaks <- function(results, rbp_primary, rbp_reference = NULL,
     # Calculate rolling mean background
     # Need to group by transcript
     dt[, bg := data.table::frollmean(get(rbp_primary), n = window_size, align = "center", fill = NA), by = group_col]
-    # Handle edges
-    dt[is.na(bg), bg := mean(get(rbp_primary), na.rm=TRUE), by = group_col]
+    # Handle edges: fall back to the whole-transcript mean computed over all rows
+    dt[, bg_global := mean(get(rbp_primary), na.rm = TRUE), by = group_col]
+    dt[is.na(bg), bg := bg_global]
+    dt[, bg_global := NULL]
     
     dt[, score := get(rbp_primary) / (bg + 1e-6)]
     

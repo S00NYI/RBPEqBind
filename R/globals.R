@@ -7,7 +7,7 @@ utils::globalVariables(c(
   
   # Column names used in data.table expressions
   "..cols", "..row_cols",
-  "bg", "chrom", "cluster", "end", "first", "g", "group",
+  "bg", "bg_global", "chrom", "cluster", "end", "first", "g", "group",
   "height", "is_peak", "Ka", "Kd", "label", "last", "motif",
   "name", "nt", "pos", "RBP", "rleid", "rna_conc", "score",
   "start", "value", "Value", "width", "x", "y",
