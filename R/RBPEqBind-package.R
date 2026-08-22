@@ -32,7 +32,6 @@
 #' @importFrom stats setNames
 #' @importFrom utils head
 #' @importFrom data.table copy setkeyv setnames rleid first last
-#' @importFrom pracma fsolve
 #' 
 #' @docType package
 #' @name RBPEqBind
