@@ -23,6 +23,16 @@ test_that("simulateBinding returns correct structure", {
   expect_true("RBP1_occupancy_fc" %in% names(result))
 })
 
+test_that("simulateBinding errors when k does not match model motif length", {
+  models <- list(
+    RBP1 = data.table::data.table(
+      motif = c("AAAAA", "UUUUU"),
+      Kd = c(10, 100)
+    )
+  )
+  expect_error(simulateBinding("AAAUUU", models, c(RBP1 = 100), k = 4), "uses 5-mers but k = 4")
+})
+
 test_that("simulateBinding occupancy is between 0 and 1", {
   models <- list(
     RBP1 = data.table::data.table(

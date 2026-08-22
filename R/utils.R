@@ -86,7 +86,8 @@ countKmers <- function(kmers) {
 #' @param h Character string.
 #' @return A list with chrom, start, end, and strand, or NULL.
 parseGenomicHeader <- function(h) {
-  if (is.null(h) || length(h) != 1 || is.na(h)) return(NULL)
+  # Regex matches UCSC coordinate header: "chrom:start-end" or "chrom:start-end(strand)"
+  # Capture groups: 1 = chromosome name, 2 = start, 3 = end, 4 = strand (+/-)
   m <- regexec("^([^:]+):([0-9]+)-([0-9]+)(?:\\(([+-])\\))?$", h)
   reg_match <- regmatches(h, m)[[1]]
   if (length(reg_match) >= 5) {

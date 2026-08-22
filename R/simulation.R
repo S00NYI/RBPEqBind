@@ -49,6 +49,12 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
     if (!is.data.frame(model) || !all(c("motif", "Kd") %in% colnames(model))) {
       stop("Model for ", rbp, " must be a dataframe with 'motif' and 'Kd' columns")
     }
+    
+    model_k <- unique(nchar(model$motif))
+    if (length(model_k) != 1L || model_k != k) {
+      stop("Model for ", rbp, " uses ", paste(model_k, collapse = "/"),
+           "-mers but k = ", k, ".")
+    }
 
     match_idx <- match(binding_params$motif, model$motif)
     if (anyNA(match_idx)) {
@@ -190,7 +196,9 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
 #'   rna_conc_grid = 10, parallel = FALSE)
 #' head(grid)
-#' @importFrom parallel mclapply detectCores
+#' @importFrom parallel detectCores
+#' @importFrom future plan multisession
+#' @importFrom future.apply future_lapply
 #' @export
 simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid, 
                           k = 5, parallel = TRUE, n_cores = NULL) {
@@ -245,17 +253,12 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
   }
   
   # Execute
-  if (n_cores > 1 && .Platform$OS.type != "windows") {
-    results_list <- parallel::mclapply(seq_len(n_jobs), run_job, mc.cores = n_cores)
-  } else if (n_cores > 1 && .Platform$OS.type == "windows") {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterEvalQ(cl, requireNamespace("data.table", quietly = TRUE))
-    parallel::clusterExport(cl, varlist = c("sequence", "rbp_models", "full_grid", "prot_grid", 
-                                             "simulateBinding", "solveEquilibrium", 
-                                             "calcBoundProtein", "extractKmers", "countKmers"), 
-                            envir = environment())
-    results_list <- parallel::parLapply(cl, seq_len(n_jobs), run_job)
-    parallel::stopCluster(cl)
+  if (n_cores > 1) {
+    old_plan <- future::plan(future::multisession, workers = n_cores)
+    on.exit(future::plan(old_plan), add = TRUE)
+    results_list <- future.apply::future_lapply(seq_len(n_jobs), run_job, 
+                                                future.seed = TRUE, 
+                                                future.packages = c("data.table"))
   } else {
     results_list <- lapply(seq_len(n_jobs), run_job)
   }
@@ -333,20 +336,12 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
     return(res)
   }
   
-  if (n_cores > 1 && .Platform$OS.type != "windows") {
-    results_list <- parallel::mclapply(seq_len(n_seqs), run_seq, mc.cores = n_cores)
-  } else if (n_cores > 1 && .Platform$OS.type == "windows") {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterEvalQ(cl, {
-      requireNamespace("data.table", quietly = TRUE)
-      requireNamespace("Biostrings", quietly = TRUE)
-    })
-    parallel::clusterExport(cl, varlist = c("seqs_dna", "seq_names", "rbp_models", 
-                                             "protein_concs", "rna_conc", "k",
-                                             "simulateBinding", "get_seq_str"),
-                            envir = environment())
-    results_list <- parallel::parLapply(cl, seq_len(n_seqs), run_seq)
-    parallel::stopCluster(cl)
+  if (n_cores > 1) {
+    old_plan <- future::plan(future::multisession, workers = n_cores)
+    on.exit(future::plan(old_plan), add = TRUE)
+    results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq, 
+                                                future.seed = TRUE, 
+                                                future.packages = c("data.table", "Biostrings"))
   } else {
     results_list <- lapply(seq_len(n_seqs), run_seq)
   }
@@ -424,8 +419,12 @@ simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_con
     return(res)
   }
   
-  if (n_cores > 1 && .Platform$OS.type != "windows") {
-    results_list <- parallel::mclapply(seq_len(n_seqs), run_seq_grid, mc.cores = n_cores)
+  if (n_cores > 1) {
+    old_plan <- future::plan(future::multisession, workers = n_cores)
+    on.exit(future::plan(old_plan), add = TRUE)
+    results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq_grid, 
+                                                future.seed = TRUE, 
+                                                future.packages = c("data.table", "Biostrings"))
   } else {
     results_list <- lapply(seq_len(n_seqs), run_seq_grid)
   }
