@@ -1,6 +1,6 @@
 Package: RBPEqBind
 Title: RNA-Binding Protein Competitive Binding Simulation
-Version: 0.99.3
+Version: 0.99.4
 Authors@R: c(person("Soon", "Yi", 
                     email = "cu.soonyi@gmail.com", 
                     role = c("aut", "cre"),
@@ -22,13 +22,11 @@ Depends:
 Imports: 
     Biostrings,
     data.table,
-    future,
     future.apply,
     GenomicRanges,
     ggplot2,
     IRanges,
     jsonlite,
-    parallel,
     rtracklayer,
     S4Vectors,
     stats,
@@ -40,6 +38,7 @@ Suggests:
     rmarkdown,
     progressr,
     BiocStyle,
+    future,
     vdiffr
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0

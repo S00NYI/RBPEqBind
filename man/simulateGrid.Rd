@@ -4,15 +4,7 @@
 \alias{simulateGrid}
 \title{Simulate Concentration Grid}
 \usage{
-simulateGrid(
-  sequence,
-  rbp_models,
-  protein_conc_grid,
-  rna_conc_grid,
-  k = 5,
-  parallel = TRUE,
-  n_cores = NULL
-)
+simulateGrid(sequence, rbp_models, protein_conc_grid, rna_conc_grid, k = 5)
 }
 \arguments{
 \item{sequence}{RNA sequence string.}
@@ -24,22 +16,19 @@ simulateGrid(
 \item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
 
 \item{k}{K-mer size (default 5).}
-
-\item{parallel}{Logical, whether to use parallel processing (default TRUE).}
-
-\item{n_cores}{Integer number of cores. If NULL (default), defaults to detectCores() - 1.}
 }
 \value{
 A data.table with results for all grid combinations.
 }
 \description{
 Runs simulations across a grid of protein/RNA concentrations.
+Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 }
 \examples{
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 grid <- simulateGrid("ACGUACGU", rbp_models,
   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
-  rna_conc_grid = 10, parallel = FALSE)
+  rna_conc_grid = 10)
 head(grid)
 }

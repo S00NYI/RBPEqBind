@@ -9,9 +9,7 @@ simulateGridFasta(
   rbp_models,
   protein_conc_grid,
   rna_conc_grid,
-  k = 5,
-  parallel = TRUE,
-  n_cores = NULL
+  k = 5
 )
 }
 \arguments{
@@ -24,16 +22,13 @@ simulateGridFasta(
 \item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
 
 \item{k}{K-mer size (default 5).}
-
-\item{parallel}{Logical, whether to use parallel processing (default TRUE).}
-
-\item{n_cores}{Integer number of cores. If NULL (default), defaults to detectCores() - 1.}
 }
 \value{
 A data.table with combined results, including a transcript column.
 }
 \description{
 Simulates competitive binding for all sequences in one or more FASTA files across a concentration grid.
+Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 }
 \examples{
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -44,8 +39,7 @@ results <- simulateGridFasta(
   rbp_models = rbp_models,
   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
   rna_conc_grid = 10,
-  k = 5,
-  parallel = FALSE
+  k = 5
 )
 head(results)
 }

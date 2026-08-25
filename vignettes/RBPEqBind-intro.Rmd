@@ -328,8 +328,15 @@ se
 # Scenario 2: RBP Binding with Varying Concentration Grid
 
 To run simulations across multiple combinations of RBP and RNA concentrations, 
-use the `simulateGrid()` function. This function includes a `parallel` option 
-for increased computational efficiency.
+use the `simulateGrid()` function. `RBPEqBind` uses the `future.apply` framework 
+for parallel processing, running sequentially by default and automatically 
+utilizing parallel workers when the user configures a `future::plan`:
+
+```{r scenario2-future-demo, eval = FALSE}
+# Optional: enable parallel processing across 2 workers
+library(future)
+plan(multisession, workers = 2)
+```
 
 ## Running Grid Simulation
 
@@ -348,8 +355,7 @@ res_grid <- simulateGrid(
   rbp_models = rbp_models,
   protein_conc_grid = prot_grid,
   rna_conc_grid = rna_grid,
-  k = k_size,
-  parallel = FALSE
+  k = k_size
 )
 ```
 
@@ -383,8 +389,7 @@ res_grid_2rbp <- simulateGrid(
   rbp_models = rbp_models_2rbp,
   protein_conc_grid = list(HH = c(10, 50), LL = c(10, 50)),
   rna_conc_grid = c(10),
-  k = k_size,
-  parallel = FALSE
+  k = k_size
 )
 
 plotGrid(
@@ -415,8 +420,7 @@ res_fasta <- simulateBindingFasta(
   rbp_models = rbp_models,
   protein_concs = c(HH = 100, HL = 100, LH = 100, LL = 100),
   rna_conc = 10,
-  k = 5,
-  parallel = FALSE
+  k = 5
 )
 head(res_fasta)
 ```
@@ -440,8 +444,7 @@ res_grid_fasta <- simulateGridFasta(
     LL = c(10, 100)
   ),
   rna_conc_grid = c(10),
-  k = 5,
-  parallel = FALSE
+  k = 5
 )
 head(res_grid_fasta)
 ```

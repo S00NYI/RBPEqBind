@@ -39,8 +39,7 @@ results <- simulateGrid(
   sequence = "ACGUACGU",
   rbp_models = rbp_models,
   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
-  rna_conc_grid = 10,
-  parallel = FALSE
+  rna_conc_grid = 10
 )
 plotGrid(results, rbp1 = "HH", rbp2 = "HL", roi_range = c(1, 8))
 }

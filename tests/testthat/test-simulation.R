@@ -89,8 +89,7 @@ test_that("simulateGrid returns correct structure", {
     models, 
     protein_conc_grid = list(RBP1 = c(10, 100)),
     rna_conc_grid = c(10),
-    k = 2,
-    parallel = FALSE
+    k = 2
   )
   
   expect_s3_class(result, "data.table")
@@ -115,8 +114,7 @@ test_that("simulateBindingFasta processes FASTA files", {
     models,
     c(RBP1 = 100),
     rna_conc = 10,
-    k = 5,
-    parallel = FALSE
+    k = 5
   )
   
   expect_s3_class(result, "data.table")
@@ -128,8 +126,7 @@ test_that("simulateBindingFasta processes FASTA files", {
     models,
     c(RBP1 = 100),
     rna_conc = 10,
-    k = 5,
-    parallel = FALSE
+    k = 5
   )
   expect_s3_class(result_multi, "data.table")
   expect_equal(nrow(result_multi), 2 * nrow(result))

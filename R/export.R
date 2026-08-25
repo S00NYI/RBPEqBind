@@ -21,7 +21,7 @@
 #' tmp_csv <- tempfile(fileext = ".csv")
 #' exportResults(results, tmp_csv, format = "csv")
 #' unlink(tmp_csv)
-#' @importFrom jsonlite stream_out toJSON
+#' @importFrom jsonlite write_json fromJSON
 #' @importFrom data.table fwrite
 #' @export
 exportResults <- function(results, output_file, format = c("json", "csv"), include_sequence = TRUE) {

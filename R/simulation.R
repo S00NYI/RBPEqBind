@@ -180,28 +180,24 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' Simulate Concentration Grid
 #'
 #' Runs simulations across a grid of protein/RNA concentrations.
+#' Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 #'
 #' @param sequence RNA sequence string.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
 #' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
-#' @param parallel Logical, whether to use parallel processing (default TRUE).
-#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
 #' @return A data.table with results for all grid combinations.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' grid <- simulateGrid("ACGUACGU", rbp_models,
 #'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
-#'   rna_conc_grid = 10, parallel = FALSE)
+#'   rna_conc_grid = 10)
 #' head(grid)
-#' @importFrom parallel detectCores
-#' @importFrom future plan multisession
 #' @importFrom future.apply future_lapply
 #' @export
-simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid, 
-                          k = 5, parallel = TRUE, n_cores = NULL) {
+simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid, k = 5) {
   
   # Validate: sequence must be a single string
   if (!is.character(sequence) || length(sequence) != 1) {
@@ -218,14 +214,6 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
   )
   full_grid <- do.call(expand.grid, grid_args)
   n_jobs <- nrow(full_grid)
-  
-  # Parallel setup
-  if (parallel) {
-    if (is.null(n_cores)) n_cores <- parallel::detectCores() - 1
-    if (n_cores < 1) n_cores <- 1
-  } else {
-    n_cores <- 1
-  }
   
   # Job function for one grid point
   run_job <- function(i) {
@@ -252,16 +240,10 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
     return(res)
   }
   
-  # Execute
-  if (n_cores > 1) {
-    old_plan <- future::plan(future::multisession, workers = n_cores)
-    on.exit(future::plan(old_plan), add = TRUE)
-    results_list <- future.apply::future_lapply(seq_len(n_jobs), run_job, 
-                                                future.seed = TRUE, 
-                                                future.packages = c("data.table"))
-  } else {
-    results_list <- lapply(seq_len(n_jobs), run_job)
-  }
+  # Execute via future.apply (respects user-configured future::plan)
+  results_list <- future.apply::future_lapply(seq_len(n_jobs), run_job, 
+                                              future.seed = TRUE, 
+                                              future.packages = c("data.table"))
   
   # Combine results
   final_dt <- data.table::rbindlist(results_list)
@@ -276,26 +258,25 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' Simulate Binding from FASTA File(s)
 #'
 #' Simulates competitive binding for all sequences in one or more FASTA files.
+#' Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 #'
 #' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_concs Named numeric vector of protein concentrations.
 #' @param rna_conc RNA concentration (default 10).
 #' @param k K-mer size (default 5).
-#' @param parallel Logical, whether to use parallel processing (default TRUE).
-#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
-#' results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100), parallel = FALSE)
+#' results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100))
 #' head(results)
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom data.table rbindlist
+#' @importFrom future.apply future_lapply
 #' @export
-simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10, 
-                                   k = 5, parallel = TRUE, n_cores = NULL) {
+simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10, k = 5) {
   
   # Input validation
   for (f in fasta_file) {
@@ -318,13 +299,6 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
     gsub("T", "U", seq_str, fixed = TRUE)
   }
   
-  if (parallel) {
-    if (is.null(n_cores)) n_cores <- parallel::detectCores() - 1
-    if (n_cores < 1) n_cores <- 1
-  } else {
-    n_cores <- 1
-  }
-  
   run_seq <- function(i) {
     seq_str <- get_seq_str(i)
     res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k)
@@ -336,15 +310,10 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
     return(res)
   }
   
-  if (n_cores > 1) {
-    old_plan <- future::plan(future::multisession, workers = n_cores)
-    on.exit(future::plan(old_plan), add = TRUE)
-    results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq, 
-                                                future.seed = TRUE, 
-                                                future.packages = c("data.table", "Biostrings"))
-  } else {
-    results_list <- lapply(seq_len(n_seqs), run_seq)
-  }
+  # Execute via future.apply (respects user-configured future::plan)
+  results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq, 
+                                              future.seed = TRUE, 
+                                              future.packages = c("data.table", "Biostrings"))
   
   data.table::rbindlist(results_list)
 }
@@ -353,14 +322,13 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' Simulate Grid from FASTA File(s)
 #'
 #' Simulates competitive binding for all sequences in one or more FASTA files across a concentration grid.
+#' Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 #'
 #' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
 #' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
-#' @param parallel Logical, whether to use parallel processing (default TRUE).
-#' @param n_cores Integer number of cores. If NULL (default), defaults to detectCores() - 1.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -371,15 +339,14 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #'   rbp_models = rbp_models,
 #'   protein_conc_grid = list(HH = c(10, 100), HL = c(10, 100)),
 #'   rna_conc_grid = 10,
-#'   k = 5,
-#'   parallel = FALSE
+#'   k = 5
 #' )
 #' head(results)
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom data.table rbindlist
+#' @importFrom future.apply future_lapply
 #' @export
-simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
-                               k = 5, parallel = TRUE, n_cores = NULL) {
+simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid, k = 5) {
   
   # Input validation
   for (f in fasta_file) {
@@ -399,35 +366,21 @@ simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_con
   
   message("Running grid simulation on ", n_seqs, " sequences...")
   
-  if (parallel) {
-    if (is.null(n_cores)) n_cores <- parallel::detectCores() - 1
-    if (n_cores < 1) n_cores <- 1
-  } else {
-    n_cores <- 1
-  }
-  
   run_seq_grid <- function(i) {
     seq_str <- as.character(seqs_dna[[i]])
     seq_str <- gsub("T", "U", seq_str, fixed = TRUE)
     
-    # IMPORTANT: parallel=FALSE here to avoid nested parallelization
-    res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid,
-                         k = k, parallel = FALSE)
+    res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid, k = k)
     if (!is.null(res)) {
       res$transcript <- seq_names[i]
     }
     return(res)
   }
   
-  if (n_cores > 1) {
-    old_plan <- future::plan(future::multisession, workers = n_cores)
-    on.exit(future::plan(old_plan), add = TRUE)
-    results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq_grid, 
-                                                future.seed = TRUE, 
-                                                future.packages = c("data.table", "Biostrings"))
-  } else {
-    results_list <- lapply(seq_len(n_seqs), run_seq_grid)
-  }
+  # Execute via future.apply (respects user-configured future::plan)
+  results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq_grid, 
+                                              future.seed = TRUE, 
+                                              future.packages = c("data.table", "Biostrings"))
   
   data.table::rbindlist(results_list)
 }

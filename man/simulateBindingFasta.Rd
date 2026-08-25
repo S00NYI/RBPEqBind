@@ -9,9 +9,7 @@ simulateBindingFasta(
   rbp_models,
   protein_concs,
   rna_conc = 10,
-  k = 5,
-  parallel = TRUE,
-  n_cores = NULL
+  k = 5
 )
 }
 \arguments{
@@ -24,21 +22,18 @@ simulateBindingFasta(
 \item{rna_conc}{RNA concentration (default 10).}
 
 \item{k}{K-mer size (default 5).}
-
-\item{parallel}{Logical, whether to use parallel processing (default TRUE).}
-
-\item{n_cores}{Integer number of cores. If NULL (default), defaults to detectCores() - 1.}
 }
 \value{
 A data.table with combined results, including a transcript column.
 }
 \description{
 Simulates competitive binding for all sequences in one or more FASTA files.
+Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 }
 \examples{
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
-results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100), parallel = FALSE)
+results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100))
 head(results)
 }
