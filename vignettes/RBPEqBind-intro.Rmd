@@ -115,6 +115,12 @@ For RBP enrichment analysis:
 - With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.
 - With **multiple active RBPs**, fold-change represents the competitive ratio of self-occupancy relative to the sum of all other active competing RBPs at that position.
 
+Because the meaning of the fold-change columns depends on the number of
+active RBPs, do not compare them between runs with different numbers of
+active RBPs. For quantitative analysis, use the occupancy column of each RBP.
+To measure the effect of a competitor, run the simulation with and without it
+and compare the occupancy columns.
+
 ## Reference
 
 For a detailed description of the mathematical model and its biological applications, 

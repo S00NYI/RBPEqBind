@@ -36,7 +36,26 @@ all RBPs or a named vector with one value per RBP. Each value must be
 \code{>= 0}. Values other than 1 need a \code{footprint}.}
 }
 \value{
-A data.table containing per-position binding probabilities/occupancies.
+A data.table with one row per nucleotide and these columns:
+  \describe{
+    \item{\code{pos}, \code{nt}}{Position and nucleotide.}
+    \item{\code{<RBP>}}{Occupancy, from 0 to 1. Without a footprint: the
+      mean binding probability of the windows that cover the nucleotide.
+      With a footprint: the probability that the nucleotide is covered by
+      the RBP. Use this column for quantitative analysis.}
+    \item{\code{<RBP>_density}}{Occupancy scaled to sum to 1 over the
+      sequence.}
+    \item{\code{<RBP>_density_fc}, \code{<RBP>_occupancy_fc}}{The meaning
+      depends on the number of active RBPs (those with a concentration
+      above 0). With one active RBP: fold change over a uniform track
+      (density times sequence length, or occupancy over its mean). With two
+      or more: the value of this RBP divided by the sum of the other active
+      RBPs at the same nucleotide, \code{NA} where that sum is 0. Do not
+      compare these columns between runs with different numbers of active
+      RBPs.}
+  }
+  To measure the effect of a competitor, run \code{simulateBinding()} with
+  and without it, and compare the \code{<RBP>} occupancy columns.
 }
 \description{
 Simulates competitive binding of multiple RBPs to a single RNA sequence.

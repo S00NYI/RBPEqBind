@@ -39,6 +39,15 @@
 - Tests compare the lattice with brute-force enumeration and with the
   cooperative McGhee-von Hippel formula.
 
+### Documentation
+- The help page of `simulateBinding()` now describes every output column.
+  It states that `_density_fc` and `_occupancy_fc` mean a fold change over a
+  uniform track with one active RBP, and a ratio to the other active RBPs
+  with two or more. The help page and the vignette recommend the occupancy
+  columns for quantitative analysis, and two runs (with and without a
+  competitor) to measure a competitor's effect. The output itself does not
+  change.
+
 ## Version 0.99.4
 
 ### Enhancements & Refactoring
