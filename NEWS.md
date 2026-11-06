@@ -30,6 +30,15 @@
 - The k-mer in the middle of the footprint sets the affinity of a placement.
 - The error message in `simulateGrid()` now names `simulateGridFasta()`.
 
+### Neighbor factor (new argument)
+- The same four functions gain `omega = 1`. With a footprint, two proteins of
+  the same RBP whose footprints touch multiply the weight of their arrangement
+  by `omega`. Values above 1 make neighbors help each other, values below 1
+  make them hinder each other, and 1 has no effect. Values other than 1 need a
+  footprint.
+- Tests compare the lattice with brute-force enumeration and with the
+  cooperative McGhee-von Hippel formula.
+
 ## Version 0.99.4
 
 ### Enhancements & Refactoring

@@ -10,7 +10,8 @@ simulateBinding(
   protein_concs,
   rna_conc = 10,
   k = 5,
-  footprint = NULL
+  footprint = NULL,
+  omega = 1
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ is one site at this concentration.}
 number of nucleotides a bound RBP covers. Either one integer for all RBPs
 or a named integer vector with one value per RBP. Each value must be at
 least \code{k}.}
+
+\item{omega}{Neighbor factor (default 1, no effect). Either one number for
+all RBPs or a named vector with one value per RBP. Each value must be
+\code{>= 0}. Values other than 1 need a \code{footprint}.}
 }
 \value{
 A data.table containing per-position binding probabilities/occupancies.
@@ -56,6 +61,11 @@ solves the same shared protein balance, with bound protein equal to
 \code{rna_conc} times the expected number of bound proteins per molecule.
 The occupancy at a nucleotide is then the probability that the nucleotide
 is covered by the RBP.
+
+With \code{omega}, two proteins of the same RBP whose footprints touch
+(the second starts right after the first ends) give their arrangement the
+extra factor \code{omega}. Values above 1 make neighbors help each other,
+values below 1 make them hinder each other, and 1 means no effect.
 }
 \examples{
 # Load and process model

@@ -10,7 +10,8 @@ simulateBindingFasta(
   protein_concs,
   rna_conc = 10,
   k = 5,
-  footprint = NULL
+  footprint = NULL,
+  omega = 1
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ simulateBindingFasta(
 
 \item{footprint}{\code{NULL} (default) or footprint sizes; see
 \code{\link{simulateBinding}}.}
+
+\item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with combined results, including a transcript column.

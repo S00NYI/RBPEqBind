@@ -100,6 +100,17 @@ $\sum P_i(s)$ over the placements that include it. The shared protein balance
 uses the expected number of bound proteins per molecule. With one placement
 per molecule, $P_i = q_i / (1 + q_i)$, the same as an independent site.
 
+### Neighbor factor (optional)
+
+With a footprint, the `omega` argument sets a neighbor factor $\omega_i$ for
+each RBP. When two proteins of the same RBP touch, so that the second starts
+right after the first ends, the weight of the arrangement is multiplied by
+$\omega_i$. With $\omega_i > 1$, neighbors help each other and binding spreads
+along runs of sites. With $\omega_i < 1$, they hinder each other. With
+$\omega_i = 1$ (the default), there is no effect. Sites with no neighbor are
+not affected. For a long uniform lattice, the model reproduces the cooperative
+result of McGhee and von Hippel (1974).
+
 For RBP enrichment analysis:
 - With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.
 - With **multiple active RBPs**, fold-change represents the competitive ratio of self-occupancy relative to the sum of all other active competing RBPs at that position.

@@ -10,7 +10,8 @@ simulateGridFasta(
   protein_conc_grid,
   rna_conc_grid,
   k = 5,
-  footprint = NULL
+  footprint = NULL,
+  omega = 1
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ simulateGridFasta(
 
 \item{footprint}{\code{NULL} (default) or footprint sizes; see
 \code{\link{simulateBinding}}.}
+
+\item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with combined results, including a transcript column.

@@ -22,6 +22,11 @@
 #' The occupancy at a nucleotide is then the probability that the nucleotide
 #' is covered by the RBP.
 #'
+#' With \code{omega}, two proteins of the same RBP whose footprints touch
+#' (the second starts right after the first ends) give their arrangement the
+#' extra factor \code{omega}. Values above 1 make neighbors help each other,
+#' values below 1 make them hinder each other, and 1 means no effect.
+#'
 #' @param sequence RNA sequence string.
 #' @param rbp_models Named list of data.frames/data.tables with 'motif' and 'Kd'.
 #' @param protein_concs Named numeric vector of total protein concentrations.
@@ -32,6 +37,9 @@
 #'   number of nucleotides a bound RBP covers. Either one integer for all RBPs
 #'   or a named integer vector with one value per RBP. Each value must be at
 #'   least \code{k}.
+#' @param omega Neighbor factor (default 1, no effect). Either one number for
+#'   all RBPs or a named vector with one value per RBP. Each value must be
+#'   \code{>= 0}. Values other than 1 need a \code{footprint}.
 #' @return A data.table containing per-position binding probabilities/occupancies.
 #' @examples
 #' # Load and process model
@@ -46,7 +54,7 @@
 #' @importFrom data.table as.data.table setkey rbindlist
 #' @export
 simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
-                            k = 5, footprint = NULL) {
+                            k = 5, footprint = NULL, omega = 1) {
   
 
   if (!is.character(sequence) || length(sequence) != 1L) {
@@ -63,6 +71,10 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
   }
   rbp_names <- names(protein_concs)
   n_rbps <- length(rbp_names)
+  om_vec <- resolveOmega(omega, rbp_names)
+  if (is.null(footprint) && any(om_vec != 1)) {
+    stop("omega acts between neighboring proteins and needs a footprint.")
+  }
   
 
   kmers <- extractKmers(sequence, k)
@@ -145,7 +157,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
       offset <- (w_vec[j] - k) %/% 2L
       1 / kd_win[seq_len(m) + offset]
     })
-    pool <- solveLatticePool(a_list, w_vec, L, rna_conc, p0_vec)
+    pool <- solveLatticePool(a_list, w_vec, L, rna_conc, p0_vec, omega = om_vec)
     final_mat <- vapply(seq_len(n_rbps), function(j) {
       latticeCoverage(pool$starts[[j]], w_vec[j], L)
     }, numeric(L))
@@ -222,6 +234,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
 #' @param k K-mer size (default 5).
 #' @param footprint \code{NULL} (default) or footprint sizes; see
 #'   \code{\link{simulateBinding}}.
+#' @param omega Neighbor factor (default 1); see \code{\link{simulateBinding}}.
 #' @return A data.table with results for all grid combinations.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -233,7 +246,7 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
 #' @importFrom future.apply future_lapply
 #' @export
 simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
-                         k = 5, footprint = NULL) {
+                         k = 5, footprint = NULL, omega = 1) {
   
   # Validate: sequence must be a single string
   if (!is.character(sequence) || length(sequence) != 1) {
@@ -264,7 +277,7 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
     
     # Run simulation
     res <- simulateBinding(sequence, rbp_models, prot_concs, rna_conc = rna_c,
-                           k = k, footprint = footprint)
+                           k = k, footprint = footprint, omega = omega)
     
     if (is.null(res)) return(NULL)
     
@@ -304,6 +317,7 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @param k K-mer size (default 5).
 #' @param footprint \code{NULL} (default) or footprint sizes; see
 #'   \code{\link{simulateBinding}}.
+#' @param omega Neighbor factor (default 1); see \code{\link{simulateBinding}}.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -316,7 +330,7 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @importFrom future.apply future_lapply
 #' @export
 simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10,
-                                 k = 5, footprint = NULL) {
+                                 k = 5, footprint = NULL, omega = 1) {
   
   # Input validation
   for (f in fasta_file) {
@@ -342,7 +356,7 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
   run_seq <- function(i) {
     seq_str <- get_seq_str(i)
     res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k,
-                           footprint = footprint)
+                           footprint = footprint, omega = omega)
     if (is.null(res)) {
       warning("Simulation returned NULL for ", seq_names[i])
       return(NULL)
@@ -372,6 +386,7 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' @param k K-mer size (default 5).
 #' @param footprint \code{NULL} (default) or footprint sizes; see
 #'   \code{\link{simulateBinding}}.
+#' @param omega Neighbor factor (default 1); see \code{\link{simulateBinding}}.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -390,7 +405,7 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' @importFrom future.apply future_lapply
 #' @export
 simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
-                              k = 5, footprint = NULL) {
+                              k = 5, footprint = NULL, omega = 1) {
   
   # Input validation
   for (f in fasta_file) {
@@ -415,7 +430,7 @@ simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_con
     seq_str <- gsub("T", "U", seq_str, fixed = TRUE)
     
     res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid,
-                        k = k, footprint = footprint)
+                        k = k, footprint = footprint, omega = omega)
     if (!is.null(res)) {
       res$transcript <- seq_names[i]
     }
