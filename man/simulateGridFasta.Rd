@@ -9,7 +9,8 @@ simulateGridFasta(
   rbp_models,
   protein_conc_grid,
   rna_conc_grid,
-  k = 5
+  k = 5,
+  footprint = NULL
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ simulateGridFasta(
 \item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
 
 \item{k}{K-mer size (default 5).}
+
+\item{footprint}{\code{NULL} (default) or footprint sizes; see
+\code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with combined results, including a transcript column.

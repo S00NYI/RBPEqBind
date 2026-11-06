@@ -4,7 +4,14 @@
 \alias{simulateGrid}
 \title{Simulate Concentration Grid}
 \usage{
-simulateGrid(sequence, rbp_models, protein_conc_grid, rna_conc_grid, k = 5)
+simulateGrid(
+  sequence,
+  rbp_models,
+  protein_conc_grid,
+  rna_conc_grid,
+  k = 5,
+  footprint = NULL
+)
 }
 \arguments{
 \item{sequence}{RNA sequence string.}
@@ -16,6 +23,9 @@ simulateGrid(sequence, rbp_models, protein_conc_grid, rna_conc_grid, k = 5)
 \item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
 
 \item{k}{K-mer size (default 5).}
+
+\item{footprint}{\code{NULL} (default) or footprint sizes; see
+\code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with results for all grid combinations.

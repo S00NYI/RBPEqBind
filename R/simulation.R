@@ -12,12 +12,26 @@
 #' independently of each other. The occupancy at a nucleotide is the mean of
 #' \eqn{\theta} over the windows that cover it.
 #'
+#' With \code{footprint}, the RNA is a lattice instead. A bound RBP covers
+#' \code{footprint} consecutive nucleotides, and two bound proteins may not
+#' overlap. A placement has the weight \eqn{f_j / K_d}, where \eqn{K_d} belongs
+#' to the k-mer in the middle of the footprint. The model sums over all
+#' allowed arrangements on one molecule (forward and backward passes) and
+#' solves the same shared protein balance, with bound protein equal to
+#' \code{rna_conc} times the expected number of bound proteins per molecule.
+#' The occupancy at a nucleotide is then the probability that the nucleotide
+#' is covered by the RBP.
+#'
 #' @param sequence RNA sequence string.
 #' @param rbp_models Named list of data.frames/data.tables with 'motif' and 'Kd'.
 #' @param protein_concs Named numeric vector of total protein concentrations.
 #' @param rna_conc Concentration of the RNA molecule (default 10). Each window
 #'   is one site at this concentration.
 #' @param k K-mer size (default 5).
+#' @param footprint \code{NULL} (default) for independent windows, or the
+#'   number of nucleotides a bound RBP covers. Either one integer for all RBPs
+#'   or a named integer vector with one value per RBP. Each value must be at
+#'   least \code{k}.
 #' @return A data.table containing per-position binding probabilities/occupancies.
 #' @examples
 #' # Load and process model
@@ -31,7 +45,8 @@
 #' head(results)
 #' @importFrom data.table as.data.table setkey rbindlist
 #' @export
-simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5) {
+simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
+                            k = 5, footprint = NULL) {
   
 
   if (!is.character(sequence) || length(sequence) != 1L) {
@@ -89,38 +104,53 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
     binding_params[[paste0("Kd_", rbp)]] <- kds
   }
   
-  # All windows draw on one supply of each protein. Each unique k-mer is a
-  # site species whose concentration is rna_conc times its copy number.
   p0_vec <- protein_concs[rbp_names]
-  kd_mat <- do.call(cbind, lapply(rbp_names, function(rbp) {
-    binding_params[[paste0("Kd_", rbp)]]
-  }))
-  colnames(kd_mat) <- rbp_names
-  site_conc <- rna_conc * binding_params$count
-
-  pool <- solveSharedPool(site_conc, kd_mat, p0_vec)
-  res_Bound <- pool$theta
-  colnames(res_Bound) <- rbp_names
-
   kmer_indices <- match(kmers, binding_params$motif)
-  
   L <- nchar(sequence)
   W <- length(kmers)
-  window_occupancy <- res_Bound[kmer_indices, , drop = FALSE]
-  
-  # Use cumsum trick for efficient position mapping
-  diff_mat <- matrix(0, nrow = L + 1, ncol = n_rbps)
-  diff_mat[seq_len(W), ] <- diff_mat[seq_len(W), ] + window_occupancy
-  diff_mat[(k + 1):(L + 1), ] <- diff_mat[(k + 1):(L + 1), ] - window_occupancy
-  pos_sums <- apply(diff_mat, 2, cumsum)[seq_len(L), , drop = FALSE]
-  
-  count_diff <- numeric(L + 1)
-  count_diff[seq_len(W)] <- count_diff[seq_len(W)] + 1
-  count_diff[(k + 1):(L + 1)] <- count_diff[(k + 1):(L + 1)] - 1
-  pos_counts <- cumsum(count_diff)[seq_len(L)]
-  pos_counts[pos_counts == 0] <- 1
-  
-  final_mat <- pos_sums / pos_counts
+
+  if (is.null(footprint)) {
+    # Independent windows. All windows draw on one supply of each protein.
+    # Each unique k-mer is a site species at rna_conc times its copy number.
+    kd_mat <- do.call(cbind, lapply(rbp_names, function(rbp) {
+      binding_params[[paste0("Kd_", rbp)]]
+    }))
+    colnames(kd_mat) <- rbp_names
+    site_conc <- rna_conc * binding_params$count
+
+    pool <- solveSharedPool(site_conc, kd_mat, p0_vec)
+    window_occupancy <- pool$theta[kmer_indices, , drop = FALSE]
+
+    # Mean over the windows that cover each nucleotide (cumsum trick)
+    diff_mat <- matrix(0, nrow = L + 1, ncol = n_rbps)
+    diff_mat[seq_len(W), ] <- diff_mat[seq_len(W), ] + window_occupancy
+    diff_mat[(k + 1):(L + 1), ] <- diff_mat[(k + 1):(L + 1), ] - window_occupancy
+    pos_sums <- apply(diff_mat, 2, cumsum)[seq_len(L), , drop = FALSE]
+
+    count_diff <- numeric(L + 1)
+    count_diff[seq_len(W)] <- count_diff[seq_len(W)] + 1
+    count_diff[(k + 1):(L + 1)] <- count_diff[(k + 1):(L + 1)] - 1
+    pos_counts <- cumsum(count_diff)[seq_len(L)]
+    pos_counts[pos_counts == 0] <- 1
+
+    final_mat <- pos_sums / pos_counts
+  } else {
+    # Lattice: a bound RBP covers `w` nucleotides and bound proteins may not
+    # overlap. The k-mer in the middle of the footprint sets the affinity.
+    w_vec <- resolveFootprint(footprint, rbp_names, k)
+    a_list <- lapply(seq_len(n_rbps), function(j) {
+      kd_win <- binding_params[[paste0("Kd_", rbp_names[j])]][kmer_indices]
+      m <- L - w_vec[j] + 1L
+      if (m < 1L) return(numeric(0))
+      offset <- (w_vec[j] - k) %/% 2L
+      1 / kd_win[seq_len(m) + offset]
+    })
+    pool <- solveLatticePool(a_list, w_vec, L, rna_conc, p0_vec)
+    final_mat <- vapply(seq_len(n_rbps), function(j) {
+      latticeCoverage(pool$starts[[j]], w_vec[j], L)
+    }, numeric(L))
+    final_mat <- matrix(final_mat, nrow = L, ncol = n_rbps)
+  }
   seq_chars <- strsplit(sequence, "")[[1]]
   
   res <- data.table::data.table(
@@ -190,6 +220,8 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
 #' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
+#' @param footprint \code{NULL} (default) or footprint sizes; see
+#'   \code{\link{simulateBinding}}.
 #' @return A data.table with results for all grid combinations.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -200,11 +232,12 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
 #' head(grid)
 #' @importFrom future.apply future_lapply
 #' @export
-simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid, k = 5) {
+simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
+                         k = 5, footprint = NULL) {
   
   # Validate: sequence must be a single string
   if (!is.character(sequence) || length(sequence) != 1) {
-    stop("sequence must be a single character string. For FASTA files, use simulateGridF().")
+    stop("sequence must be a single character string. For FASTA files, use simulateGridFasta().")
   }
   
   # Expand protein concentration grid
@@ -230,7 +263,8 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
     names(prot_concs) <- colnames(prot_grid)
     
     # Run simulation
-    res <- simulateBinding(sequence, rbp_models, prot_concs, rna_conc = rna_c, k = k)
+    res <- simulateBinding(sequence, rbp_models, prot_concs, rna_conc = rna_c,
+                           k = k, footprint = footprint)
     
     if (is.null(res)) return(NULL)
     
@@ -268,6 +302,8 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @param protein_concs Named numeric vector of protein concentrations.
 #' @param rna_conc RNA concentration (default 10).
 #' @param k K-mer size (default 5).
+#' @param footprint \code{NULL} (default) or footprint sizes; see
+#'   \code{\link{simulateBinding}}.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -279,7 +315,8 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' @importFrom data.table rbindlist
 #' @importFrom future.apply future_lapply
 #' @export
-simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10, k = 5) {
+simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10,
+                                 k = 5, footprint = NULL) {
   
   # Input validation
   for (f in fasta_file) {
@@ -304,7 +341,8 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
   
   run_seq <- function(i) {
     seq_str <- get_seq_str(i)
-    res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k)
+    res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k,
+                           footprint = footprint)
     if (is.null(res)) {
       warning("Simulation returned NULL for ", seq_names[i])
       return(NULL)
@@ -332,6 +370,8 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
 #' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
 #' @param k K-mer size (default 5).
+#' @param footprint \code{NULL} (default) or footprint sizes; see
+#'   \code{\link{simulateBinding}}.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -349,7 +389,8 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' @importFrom data.table rbindlist
 #' @importFrom future.apply future_lapply
 #' @export
-simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid, k = 5) {
+simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
+                              k = 5, footprint = NULL) {
   
   # Input validation
   for (f in fasta_file) {
@@ -373,7 +414,8 @@ simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_con
     seq_str <- as.character(seqs_dna[[i]])
     seq_str <- gsub("T", "U", seq_str, fixed = TRUE)
     
-    res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid, k = k)
+    res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid,
+                        k = k, footprint = footprint)
     if (!is.null(res)) {
       res$transcript <- seq_names[i]
     }

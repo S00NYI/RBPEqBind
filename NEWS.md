@@ -17,6 +17,19 @@
 - The internal solvers `solveEquilibrium()` and `calcBoundProtein()` are
   replaced by the internal `solveSharedPool()`.
 
+### Footprint lattice (new argument)
+- `simulateBinding()`, `simulateGrid()`, `simulateBindingFasta()` and
+  `simulateGridFasta()` gain `footprint = NULL`. With `NULL`, windows bind
+  independently, as before. With a number (or a named vector, one value per
+  RBP), a bound RBP covers that many nucleotides and bound proteins may not
+  overlap. The model sums over all allowed arrangements on a molecule with a
+  forward and a backward pass, and keeps the shared protein balance.
+- With a footprint, the per-position value is the probability that the
+  nucleotide is covered by the RBP. Without one, it stays the mean over the
+  windows that cover the nucleotide.
+- The k-mer in the middle of the footprint sets the affinity of a placement.
+- The error message in `simulateGrid()` now names `simulateGridFasta()`.
+
 ## Version 0.99.4
 
 ### Enhancements & Refactoring

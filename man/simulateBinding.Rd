@@ -4,7 +4,14 @@
 \alias{simulateBinding}
 \title{Simulate Competitive Binding}
 \usage{
-simulateBinding(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5)
+simulateBinding(
+  sequence,
+  rbp_models,
+  protein_concs,
+  rna_conc = 10,
+  k = 5,
+  footprint = NULL
+)
 }
 \arguments{
 \item{sequence}{RNA sequence string.}
@@ -17,6 +24,11 @@ simulateBinding(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5)
 is one site at this concentration.}
 
 \item{k}{K-mer size (default 5).}
+
+\item{footprint}{\code{NULL} (default) for independent windows, or the
+number of nucleotides a bound RBP covers. Either one integer for all RBPs
+or a named integer vector with one value per RBP. Each value must be at
+least \code{k}.}
 }
 \value{
 A data.table containing per-position binding probabilities/occupancies.
@@ -34,6 +46,16 @@ The free concentrations satisfy the mass balance
 \eqn{P_j} is the total concentration of RBP \eqn{j}. Sites bind
 independently of each other. The occupancy at a nucleotide is the mean of
 \eqn{\theta} over the windows that cover it.
+
+With \code{footprint}, the RNA is a lattice instead. A bound RBP covers
+\code{footprint} consecutive nucleotides, and two bound proteins may not
+overlap. A placement has the weight \eqn{f_j / K_d}, where \eqn{K_d} belongs
+to the k-mer in the middle of the footprint. The model sums over all
+allowed arrangements on one molecule (forward and backward passes) and
+solves the same shared protein balance, with bound protein equal to
+\code{rna_conc} times the expected number of bound proteins per molecule.
+The occupancy at a nucleotide is then the probability that the nucleotide
+is covered by the RBP.
 }
 \examples{
 # Load and process model

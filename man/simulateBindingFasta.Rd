@@ -9,7 +9,8 @@ simulateBindingFasta(
   rbp_models,
   protein_concs,
   rna_conc = 10,
-  k = 5
+  k = 5,
+  footprint = NULL
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ simulateBindingFasta(
 \item{rna_conc}{RNA concentration (default 10).}
 
 \item{k}{K-mer size (default 5).}
+
+\item{footprint}{\code{NULL} (default) or footprint sizes; see
+\code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with combined results, including a transcript column.

@@ -81,6 +81,25 @@ When protein is in large excess over the RNA, $f_i \approx [P_{0,i}]$.
 Per-position probability ($p_{pos}$) is the mean of $p_{w,i}$ over all
 $k$-mer windows that cover the position.
 
+### Footprint (optional)
+
+Independent windows allow two proteins on overlapping windows of the same
+molecule. With the `footprint` argument, a bound RBP covers `footprint`
+nucleotides and two bound proteins may not overlap. A placement starting at
+nucleotide $s$ has the weight $q_i(s) = f_i / K_{D,i}(s)$, where
+$K_{D,i}(s)$ belongs to the $k$-mer in the middle of the footprint. The
+partition function $Z$ sums the weights of all allowed arrangements on one
+molecule. A forward and a backward pass over the sequence give the
+probability that a footprint of RBP $i$ starts at $s$:
+
+$$P_i(s) = \frac{Z_{1..s-1} \; q_i(s) \; Z_{s+w_i..l}}{Z}$$
+
+where $Z_{a..b}$ sums the arrangements inside nucleotides $a$ to $b$. The
+per-position value is then the probability that the nucleotide is covered,
+$\sum P_i(s)$ over the placements that include it. The shared protein balance
+uses the expected number of bound proteins per molecule. With one placement
+per molecule, $P_i = q_i / (1 + q_i)$, the same as an independent site.
+
 For RBP enrichment analysis:
 - With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.
 - With **multiple active RBPs**, fold-change represents the competitive ratio of self-occupancy relative to the sum of all other active competing RBPs at that position.
