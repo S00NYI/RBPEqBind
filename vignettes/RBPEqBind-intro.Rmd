@@ -43,9 +43,9 @@ based on equilibrium binding kinetics. The simulation follows two key principles
 
 1. **Simultaneous competition**: All RBPs are introduced simultaneously, ensuring 
    equal chances of interaction with the RNA.
-2. **Independent binding sites**: Each RNA binding site and its interactions with 
-   RBPs are treated as independent events, allowing calculation of equilibrium 
-   concentrations for each binding site.
+2. **Independent binding sites with a shared protein supply**: Each binding site
+   binds independently of the others, but all sites draw on one supply of each
+   RBP. Bound protein can therefore never exceed the total protein.
 
 ## Motivation
 
@@ -63,17 +63,23 @@ At equilibrium, the dissociation constant is defined as:
 
 $$K_{D,i} = \frac{[R_{eq}][P_{i,eq}]}{[P_iR]}$$
 
-Given the initial concentrations of RBPs ($[P_{0,i}]$) and RNA ($[R_0]$), the 
-equilibrium concentration of each RNA-RBP complex can be determined by solving 
-the system of equations with the constraint:
+For free RBP concentrations $f_i$, the probability that window $w$ is bound
+by RBP $i$ is
 
-$$[R_0] \geq [R_{eq}] \geq 0$$
+$$p_{w,i} = \frac{f_i / K_{D,w,i}}{1 + \sum_m f_m / K_{D,w,m}}$$
 
-From the equilibrium concentrations, binding probability at each unique motif 
-site ($p_{site}$) is calculated as $[P_iR] / [R_{0,e}]$, where $[R_{0,e}] = n \times [R_0]$ 
-is the effective initial RNA concentration accounting for the motif multiplicity $n$ 
-in the transcript sequence. Per-position probability ($p_{pos}$) is then 
-obtained by averaging overlapping $p_{site}$ values across all $k$-mer windows covering each position.
+Each window is one site at the RNA concentration $[R_0]$. All windows draw on
+the same supply of each RBP, so the free concentrations follow from the mass
+balance
+
+$$[P_{0,i}] = f_i + [R_0] \sum_w p_{w,i}$$
+
+where $[P_{0,i}]$ is the total concentration of RBP $i$. RBPEqBind solves
+these equations for all RBPs together. Two windows with the same $K_D$ values
+therefore have the same binding probability, however often their k-mer occurs.
+When protein is in large excess over the RNA, $f_i \approx [P_{0,i}]$.
+Per-position probability ($p_{pos}$) is the mean of $p_{w,i}$ over all
+$k$-mer windows that cover the position.
 
 For RBP enrichment analysis:
 - With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.

@@ -2,10 +2,21 @@
 #'
 #' Simulates competitive binding of multiple RBPs to a single RNA sequence.
 #'
+#' Each k-mer window of the sequence is a binding site. All sites draw on one
+#' shared supply of each protein. For free protein concentrations \eqn{f_j},
+#' the fraction of site \eqn{i} bound by RBP \eqn{j} is
+#' \deqn{\theta_{ij} = \frac{f_j / K_{d,ij}}{1 + \sum_m f_m / K_{d,im}}.}
+#' The free concentrations satisfy the mass balance
+#' \eqn{P_j = f_j + c_{RNA} \sum_i \theta_{ij}}, summed over all windows, where
+#' \eqn{P_j} is the total concentration of RBP \eqn{j}. Sites bind
+#' independently of each other. The occupancy at a nucleotide is the mean of
+#' \eqn{\theta} over the windows that cover it.
+#'
 #' @param sequence RNA sequence string.
 #' @param rbp_models Named list of data.frames/data.tables with 'motif' and 'Kd'.
 #' @param protein_concs Named numeric vector of total protein concentrations.
-#' @param rna_conc Total RNA concentration (default 10).
+#' @param rna_conc Concentration of the RNA molecule (default 10). Each window
+#'   is one site at this concentration.
 #' @param k K-mer size (default 5).
 #' @return A data.table containing per-position binding probabilities/occupancies.
 #' @examples
@@ -23,8 +34,17 @@
 simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5) {
   
 
+  if (!is.character(sequence) || length(sequence) != 1L) {
+    stop("sequence must be a single character string.")
+  }
   if (!all(names(protein_concs) %in% names(rbp_models))) {
     stop("All RBPs in protein_concs must have a corresponding model in rbp_models")
+  }
+  if (!is.numeric(protein_concs) || anyNA(protein_concs) || any(protein_concs < 0)) {
+    stop("protein_concs must be non-negative numbers.")
+  }
+  if (!is.numeric(rna_conc) || length(rna_conc) != 1L || is.na(rna_conc) || rna_conc < 0) {
+    stop("rna_conc must be a single non-negative number.")
   }
   rbp_names <- names(protein_concs)
   n_rbps <- length(rbp_names)
@@ -69,37 +89,20 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10, 
     binding_params[[paste0("Kd_", rbp)]] <- kds
   }
   
-  binding_params$FreeRNA <- 0.0
-  for (rbp in rbp_names) {
-    binding_params[[paste0("Bound_", rbp)]] <- 0.0
-  }
-  
+  # All windows draw on one supply of each protein. Each unique k-mer is a
+  # site species whose concentration is rna_conc times its copy number.
   p0_vec <- protein_concs[rbp_names]
-  n_unique <- nrow(binding_params)
-  res_Req <- numeric(n_unique)
-  res_Bound <- matrix(0, nrow = n_unique, ncol = n_rbps)
+  kd_mat <- do.call(cbind, lapply(rbp_names, function(rbp) {
+    binding_params[[paste0("Kd_", rbp)]]
+  }))
+  colnames(kd_mat) <- rbp_names
+  site_conc <- rna_conc * binding_params$count
+
+  pool <- solveSharedPool(site_conc, kd_mat, p0_vec)
+  res_Bound <- pool$theta
   colnames(res_Bound) <- rbp_names
-  
-  for (i in seq_len(n_unique)) {
-    eR0 <- rna_conc * binding_params$count[i]
-    current_kds <- numeric(n_rbps)
-    for (j in seq_len(n_rbps)) {
-      current_kds[j] <- binding_params[[paste0("Kd_", rbp_names[j])]][i]
-    }
-    
-    X_eq <- solveEquilibrium(eR0, p0_vec, current_kds)
-    bound_eq <- calcBoundProtein(X_eq, p0_vec, current_kds)
-    
-    if (eR0 > 0) {
-      occ_vec <- bound_eq / eR0
-    } else {
-      occ_vec <- rep(0, n_rbps)
-    }
-    res_Bound[i, ] <- occ_vec
-  }
-  
-  binding_res <- cbind(binding_params, res_Bound)
-  kmer_indices <- match(kmers, binding_res$motif)
+
+  kmer_indices <- match(kmers, binding_params$motif)
   
   L <- nchar(sequence)
   W <- length(kmers)

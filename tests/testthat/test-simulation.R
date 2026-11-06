@@ -72,6 +72,55 @@ test_that("simulateBinding high affinity has higher occupancy", {
   expect_true(mean(result$HighAff) > mean(result$LowAff))
 })
 
+test_that("every copy of a motif gets the same occupancy as a single-copy motif of equal Kd", {
+  # AAAAA appears many times, CCCCC once, both with the same Kd. With one
+  # shared protein supply, both see the same free protein, so their windows
+  # must have the same occupancy, however many copies exist.
+  # All other 5-mers share one weak Kd, so a nucleotide's occupancy depends
+  # only on how its covering windows bind. The protein supply (50) is below
+  # the AAAAA sites (20 copies x rna_conc 5 = 100), so the pool matters here.
+  b <- c("A", "C", "G", "U")
+  all5 <- do.call(paste0, expand.grid(b, b, b, b, b, stringsAsFactors = FALSE))
+  kd <- rep(1e6, length(all5))
+  kd[all5 %in% c("AAAAA", "CCCCC")] <- 10
+  models <- list(RBP1 = data.table::data.table(motif = all5, Kd = kd))
+  seq <- paste0("G", strrep("AAAAAG", 20), "CCCCCGGGGG")
+  res <- simulateBinding(seq, models, c(RBP1 = 50), rna_conc = 5, k = 5)
+  # Compare the middle nucleotide of an interior AAAAA block and of CCCCC.
+  # Each is covered by five windows, of which one is the motif itself.
+  a_mid <- 1 + 6 * 10 + 3
+  c_mid <- regexpr("CCCCC", seq)[1] + 2
+  expect_equal(substr(seq, a_mid - 2, a_mid + 2), "AAAAA")
+  expect_equal(res$RBP1[a_mid], res$RBP1[c_mid], tolerance = 1e-10)
+  expect_gt(res$RBP1[c_mid], 0.01)
+})
+
+test_that("simulateBinding occupancy falls as RNA rises at fixed protein", {
+  models <- list(RBP1 = data.table::data.table(motif = c("AA", "AU", "UA", "UU"),
+                                               Kd = c(10, 50, 50, 100)))
+  occ <- vapply(c(1, 10, 100, 1000), function(r) {
+    mean(simulateBinding("AAUUAAUU", models, c(RBP1 = 100), rna_conc = r, k = 2)$RBP1)
+  }, numeric(1))
+  expect_true(all(diff(occ) < 0))
+})
+
+test_that("simulateBinding at protein excess matches the independent-site formula", {
+  models <- list(RBP1 = data.table::data.table(motif = c("AA", "AU", "UA", "UU"),
+                                               Kd = c(10, 50, 50, 100)))
+  seq <- "AAUU"
+  res <- simulateBinding(seq, models, c(RBP1 = 100), rna_conc = 1e-9, k = 2)
+  theta <- function(kd) (100 / kd) / (1 + 100 / kd)
+  w <- theta(c(10, 50, 100))            # windows AA, AU, UU
+  expected <- c(w[1], mean(w[1:2]), mean(w[2:3]), w[3])
+  expect_equal(res$RBP1, expected, tolerance = 1e-8)
+})
+
+test_that("simulateBinding rejects negative concentrations", {
+  models <- list(RBP1 = data.table::data.table(motif = "AA", Kd = 10))
+  expect_error(simulateBinding("AAA", models, c(RBP1 = -1), k = 2), "non-negative")
+  expect_error(simulateBinding("AAA", models, c(RBP1 = 1), rna_conc = -1, k = 2), "non-negative")
+})
+
 test_that("simulateBinding errors on invalid sequence type", {
   models <- list(RBP1 = data.table::data.table(motif = "AA", Kd = 10))
   

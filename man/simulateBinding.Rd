@@ -13,7 +13,8 @@ simulateBinding(sequence, rbp_models, protein_concs, rna_conc = 10, k = 5)
 
 \item{protein_concs}{Named numeric vector of total protein concentrations.}
 
-\item{rna_conc}{Total RNA concentration (default 10).}
+\item{rna_conc}{Concentration of the RNA molecule (default 10). Each window
+is one site at this concentration.}
 
 \item{k}{K-mer size (default 5).}
 }
@@ -22,6 +23,17 @@ A data.table containing per-position binding probabilities/occupancies.
 }
 \description{
 Simulates competitive binding of multiple RBPs to a single RNA sequence.
+}
+\details{
+Each k-mer window of the sequence is a binding site. All sites draw on one
+shared supply of each protein. For free protein concentrations \eqn{f_j},
+the fraction of site \eqn{i} bound by RBP \eqn{j} is
+\deqn{\theta_{ij} = \frac{f_j / K_{d,ij}}{1 + \sum_m f_m / K_{d,im}}.}
+The free concentrations satisfy the mass balance
+\eqn{P_j = f_j + c_{RNA} \sum_i \theta_{ij}}, summed over all windows, where
+\eqn{P_j} is the total concentration of RBP \eqn{j}. Sites bind
+independently of each other. The occupancy at a nucleotide is the mean of
+\eqn{\theta} over the windows that cover it.
 }
 \examples{
 # Load and process model

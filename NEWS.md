@@ -1,5 +1,22 @@
 # RBPEqBind News
 
+## Development version (branch dev-v2, not released)
+
+### Shared protein pool (changes numerical output)
+- `simulateBinding()` now solves one mass balance for each RBP across all
+  binding sites of the sequence. All sites draw on one shared supply of each
+  protein, so total bound protein can no longer exceed total protein.
+- The copy-number scaling of the RNA concentration (`rna_conc * count` per
+  k-mer) is removed. Every copy of a k-mer now has the same binding
+  probability. The copy number enters only as the amount of protein that the
+  copies take from the supply.
+- When protein is in large excess over RNA, results agree with 0.99.4. When
+  protein is limiting, occupancies are lower than in 0.99.4.
+- `simulateBinding()` now checks that `protein_concs` and `rna_conc` are
+  non-negative and that `sequence` is a single string.
+- The internal solvers `solveEquilibrium()` and `calcBoundProtein()` are
+  replaced by the internal `solveSharedPool()`.
+
 ## Version 0.99.4
 
 ### Enhancements & Refactoring
