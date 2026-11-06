@@ -79,109 +79,47 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
   if (!is.character(sequence) || length(sequence) != 1L) {
     stop("sequence must be a single character string.")
   }
-  if (!all(names(protein_concs) %in% names(rbp_models))) {
-    stop("All RBPs in protein_concs must have a corresponding model in rbp_models")
-  }
-  if (!is.numeric(protein_concs) || anyNA(protein_concs) || any(protein_concs < 0)) {
-    stop("protein_concs must be non-negative numbers.")
-  }
   if (!is.numeric(rna_conc) || length(rna_conc) != 1L || is.na(rna_conc) || rna_conc < 0) {
     stop("rna_conc must be a single non-negative number.")
   }
+  om_vec <- checkProteinInputs(rbp_models, protein_concs, footprint, omega)
   rbp_names <- names(protein_concs)
-  n_rbps <- length(rbp_names)
-  om_vec <- resolveOmega(omega, rbp_names)
-  if (is.null(footprint) && any(om_vec != 1)) {
-    stop("omega acts between neighboring proteins and needs a footprint.")
-  }
-  
 
-  kmers <- extractKmers(sequence, k)
-  if (length(kmers) == 0) {
-    warning("No k-mers found for sequence length ", nchar(sequence), " k = ", k)
-    return(NULL)
-  }
-  
-  unique_kmers <- countKmers(kmers)
-  if (nrow(unique_kmers) == 0) {
-      warning("Unique k-mers count is 0")
-      return(NULL)
-  }
-  
-  binding_params <- unique_kmers
-  
-  for (rbp in rbp_names) {
-    model <- rbp_models[[rbp]]
-    if (!is.data.frame(model) || !all(c("motif", "Kd") %in% colnames(model))) {
-      stop("Model for ", rbp, " must be a dataframe with 'motif' and 'Kd' columns")
-    }
-    
-    model_k <- unique(nchar(model$motif))
-    if (length(model_k) != 1L || model_k != k) {
-      stop("Model for ", rbp, " uses ", paste(model_k, collapse = "/"),
-           "-mers but k = ", k, ".")
-    }
-
-    match_idx <- match(binding_params$motif, model$motif)
-    if (anyNA(match_idx)) {
-      missing <- head(binding_params$motif[is.na(match_idx)])
-      warning("Some motifs in sequence not found in model for ", rbp, ": ", paste(missing, collapse=","), "... using Inf Kd (no binding)")
-      kds <- rep(Inf, nrow(binding_params))
-      kds[!is.na(match_idx)] <- model$Kd[match_idx[!is.na(match_idx)]]
-    } else {
-      kds <- model$Kd[match_idx]
-    }
-    
-    binding_params[[paste0("Kd_", rbp)]] <- kds
-  }
-  
+  sites <- prepareKmerSites(sequence, rbp_models, rbp_names, k)
+  if (is.null(sites)) return(NULL)
   p0_vec <- protein_concs[rbp_names]
-  kmer_indices <- match(kmers, binding_params$motif)
-  L <- nchar(sequence)
-  W <- length(kmers)
 
   if (is.null(footprint)) {
     # Independent windows. All windows draw on one supply of each protein.
     # Each unique k-mer is a site species at rna_conc times its copy number.
-    kd_mat <- do.call(cbind, lapply(rbp_names, function(rbp) {
-      binding_params[[paste0("Kd_", rbp)]]
-    }))
-    colnames(kd_mat) <- rbp_names
-    site_conc <- rna_conc * binding_params$count
-
-    pool <- solveSharedPool(site_conc, kd_mat, p0_vec)
-    window_occupancy <- pool$theta[kmer_indices, , drop = FALSE]
-
-    # Mean over the windows that cover each nucleotide (cumsum trick)
-    diff_mat <- matrix(0, nrow = L + 1, ncol = n_rbps)
-    diff_mat[seq_len(W), ] <- diff_mat[seq_len(W), ] + window_occupancy
-    diff_mat[(k + 1):(L + 1), ] <- diff_mat[(k + 1):(L + 1), ] - window_occupancy
-    pos_sums <- apply(diff_mat, 2, cumsum)[seq_len(L), , drop = FALSE]
-
-    count_diff <- numeric(L + 1)
-    count_diff[seq_len(W)] <- count_diff[seq_len(W)] + 1
-    count_diff[(k + 1):(L + 1)] <- count_diff[(k + 1):(L + 1)] - 1
-    pos_counts <- cumsum(count_diff)[seq_len(L)]
-    pos_counts[pos_counts == 0] <- 1
-
-    final_mat <- pos_sums / pos_counts
+    pool <- solveSharedPool(rna_conc * sites$count, sites$kd_mat, p0_vec)
+    final_mat <- windowTrack(pool$theta[sites$kmer_index, , drop = FALSE],
+                             sites$L, k)
   } else {
     # Lattice: a bound RBP covers `w` nucleotides and bound proteins may not
     # overlap. The k-mer in the middle of the footprint sets the affinity.
     w_vec <- resolveFootprint(footprint, rbp_names, k)
-    a_list <- lapply(seq_len(n_rbps), function(j) {
-      kd_win <- binding_params[[paste0("Kd_", rbp_names[j])]][kmer_indices]
-      m <- L - w_vec[j] + 1L
-      if (m < 1L) return(numeric(0))
-      offset <- (w_vec[j] - k) %/% 2L
-      1 / kd_win[seq_len(m) + offset]
-    })
-    pool <- solveLatticePool(a_list, w_vec, L, rna_conc, p0_vec, omega = om_vec)
-    final_mat <- vapply(seq_len(n_rbps), function(j) {
-      latticeCoverage(pool$starts[[j]], w_vec[j], L)
-    }, numeric(L))
-    final_mat <- matrix(final_mat, nrow = L, ncol = n_rbps)
+    pool <- solveLatticePool(latticeAffinity(sites, w_vec, k), w_vec,
+                             sites$L, rna_conc, p0_vec, omega = om_vec)
+    final_mat <- latticeTrack(pool$starts, w_vec, sites$L)
   }
+  buildTrackTable(sequence, final_mat, rbp_names, protein_concs)
+}
+
+# ==============================================================================
+# Internal steps shared by simulateBinding() and the shared-supply runs
+# ==============================================================================
+
+# Result Table for One Sequence
+#
+# @param sequence RNA sequence string.
+# @param final_mat Occupancy matrix, one row per nucleotide and one column per
+#   RBP.
+# @param rbp_names Names of the simulated RBPs.
+# @param protein_concs Named protein concentrations (sets the active RBPs).
+# @return The data.table that simulateBinding() returns.
+buildTrackTable <- function(sequence, final_mat, rbp_names, protein_concs) {
+  L <- nchar(sequence)
   seq_chars <- strsplit(sequence, "")[[1]]
   
   res <- data.table::data.table(
@@ -239,6 +177,139 @@ simulateBinding <- function(sequence, rbp_models, protein_concs, rna_conc = 10,
   }
   
   return(res)
+}
+
+
+# Check the Protein Inputs of a Simulation
+#
+# @return The omega value of each RBP (see resolveOmega()).
+checkProteinInputs <- function(rbp_models, protein_concs, footprint, omega) {
+  if (!all(names(protein_concs) %in% names(rbp_models))) {
+    stop("All RBPs in protein_concs must have a corresponding model in rbp_models")
+  }
+  if (!is.numeric(protein_concs) || anyNA(protein_concs) || any(protein_concs < 0)) {
+    stop("protein_concs must be non-negative numbers.")
+  }
+  om_vec <- resolveOmega(omega, names(protein_concs))
+  if (is.null(footprint) && any(om_vec != 1)) {
+    stop("omega acts between neighboring proteins and needs a footprint.")
+  }
+  om_vec
+}
+
+# K-mer Sites of One Sequence
+#
+# @param sequence RNA sequence string.
+# @param rbp_models Named list of RBP models.
+# @param rbp_names Names of the simulated RBPs.
+# @param k K-mer size.
+# @return NULL (with a warning) when the sequence has no k-mers. Otherwise a
+#   list with `kmer_index` (the unique k-mer of each window), `count` (copies
+#   of each unique k-mer), `kd_mat` (Kd of each unique k-mer, one column per
+#   RBP) and `L` (sequence length).
+prepareKmerSites <- function(sequence, rbp_models, rbp_names, k) {
+  kmers <- extractKmers(sequence, k)
+  if (length(kmers) == 0) {
+    warning("No k-mers found for sequence length ", nchar(sequence), " k = ", k)
+    return(NULL)
+  }
+
+  binding_params <- countKmers(kmers)
+  if (nrow(binding_params) == 0) {
+    warning("Unique k-mers count is 0")
+    return(NULL)
+  }
+
+  for (rbp in rbp_names) {
+    model <- rbp_models[[rbp]]
+    if (!is.data.frame(model) || !all(c("motif", "Kd") %in% colnames(model))) {
+      stop("Model for ", rbp, " must be a dataframe with 'motif' and 'Kd' columns")
+    }
+
+    model_k <- unique(nchar(model$motif))
+    if (length(model_k) != 1L || model_k != k) {
+      stop("Model for ", rbp, " uses ", paste(model_k, collapse = "/"),
+           "-mers but k = ", k, ".")
+    }
+
+    match_idx <- match(binding_params$motif, model$motif)
+    if (anyNA(match_idx)) {
+      missing <- head(binding_params$motif[is.na(match_idx)])
+      warning("Some motifs in sequence not found in model for ", rbp, ": ", paste(missing, collapse=","), "... using Inf Kd (no binding)")
+      kds <- rep(Inf, nrow(binding_params))
+      kds[!is.na(match_idx)] <- model$Kd[match_idx[!is.na(match_idx)]]
+    } else {
+      kds <- model$Kd[match_idx]
+    }
+
+    binding_params[[paste0("Kd_", rbp)]] <- kds
+  }
+
+  kd_mat <- do.call(cbind, lapply(rbp_names, function(rbp) {
+    binding_params[[paste0("Kd_", rbp)]]
+  }))
+  colnames(kd_mat) <- rbp_names
+  list(kmer_index = match(kmers, binding_params$motif),
+       count = binding_params$count, kd_mat = kd_mat, L = nchar(sequence))
+}
+
+# Nucleotide Occupancy From Window Occupancy
+#
+# @param window_occupancy Matrix of window occupancies, one row per window and
+#   one column per RBP.
+# @param L Sequence length.
+# @param k K-mer size.
+# @return Matrix with one row per nucleotide: the mean occupancy of the
+#   windows that cover it.
+windowTrack <- function(window_occupancy, L, k) {
+  W <- nrow(window_occupancy)
+  n_rbps <- ncol(window_occupancy)
+  # Mean over the windows that cover each nucleotide (cumsum trick)
+  diff_mat <- matrix(0, nrow = L + 1, ncol = n_rbps)
+  diff_mat[seq_len(W), ] <- diff_mat[seq_len(W), ] + window_occupancy
+  diff_mat[(k + 1):(L + 1), ] <- diff_mat[(k + 1):(L + 1), ] - window_occupancy
+  pos_sums <- apply(diff_mat, 2, cumsum)[seq_len(L), , drop = FALSE]
+
+  count_diff <- numeric(L + 1)
+  count_diff[seq_len(W)] <- count_diff[seq_len(W)] + 1
+  count_diff[(k + 1):(L + 1)] <- count_diff[(k + 1):(L + 1)] - 1
+  pos_counts <- cumsum(count_diff)[seq_len(L)]
+  pos_counts[pos_counts == 0] <- 1
+
+  pos_sums / pos_counts
+}
+
+# Placement Affinities on the Lattice
+#
+# @param sites Result of prepareKmerSites().
+# @param w_vec Footprint of each RBP.
+# @param k K-mer size.
+# @return List with one vector per RBP: 1 / Kd for each placement start. The
+#   k-mer in the middle of the footprint sets the affinity.
+latticeAffinity <- function(sites, w_vec, k) {
+  L <- sites$L
+  lapply(seq_along(w_vec), function(j) {
+    kd_win <- sites$kd_mat[sites$kmer_index, j]
+    m <- L - w_vec[j] + 1L
+    if (m < 1L) return(numeric(0))
+    offset <- (w_vec[j] - k) %/% 2L
+    1 / kd_win[seq_len(m) + offset]
+  })
+}
+
+# Nucleotide Occupancy on the Lattice
+#
+# @param starts List of start-probability vectors, one per RBP.
+# @param w_vec Footprint of each RBP.
+# @param L Sequence length.
+# @return Matrix with one row per nucleotide: the probability that the
+#   nucleotide is covered by each RBP.
+latticeTrack <- function(starts, w_vec, L) {
+  n_rbps <- length(w_vec)
+  final_mat <- vapply(seq_len(n_rbps), function(j) {
+    latticeCoverage(starts[[j]], w_vec[j], L)
+  }, numeric(L))
+  matrix(final_mat, nrow = L, ncol = n_rbps)
 }
 
 #' Simulate Concentration Grid
@@ -329,66 +400,77 @@ simulateGrid <- function(sequence, rbp_models, protein_conc_grid, rna_conc_grid,
 #' Simulates competitive binding for all sequences in one or more FASTA files.
 #' Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 #'
+#' By default (\code{shared_supply = FALSE}) each sequence is simulated alone,
+#' with the full protein supply, as with \code{\link{simulateBinding}}. With
+#' \code{shared_supply = TRUE}, all sequences are in one tube and draw on one
+#' supply of each protein. The model then solves one mass balance,
+#' \eqn{P_j = f_j + \sum_t c_t \langle N_j \rangle_t}, where \eqn{c_t} is the
+#' concentration of sequence \eqn{t} and \eqn{\langle N_j \rangle_t} is its
+#' expected number of bound proteins of RBP \eqn{j} (summed over windows
+#' without a footprint). Each sequence keeps its own windows or lattice, so no
+#' placement crosses from one sequence to the next. All sequences see the
+#' same free protein level \eqn{f_j}. This is the setup of an experiment that
+#' titrates protein into a mix of RNAs, and it assumes that the mix is well
+#' mixed and at equilibrium.
+#'
 #' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_concs Named numeric vector of protein concentrations.
-#' @param rna_conc RNA concentration (default 10).
+#' @param rna_conc RNA concentration (default 10). Either one value for all
+#'   sequences, or one value per sequence: a vector named with the sequence
+#'   names, or an unnamed vector in file order.
 #' @param k K-mer size (default 5).
 #' @param footprint \code{NULL} (default) or footprint sizes; see
 #'   \code{\link{simulateBinding}}.
 #' @param omega Neighbor factor (default 1); see \code{\link{simulateBinding}}.
+#' @param shared_supply If \code{TRUE}, all sequences draw on one supply of
+#'   each protein. If \code{FALSE} (default), each sequence is simulated alone.
 #' @return A data.table with combined results, including a transcript column.
+#'   The per-sequence columns are the same as for
+#'   \code{\link{simulateBinding}}. The density and fold-change columns are
+#'   computed within each sequence.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
 #' fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind")
 #' rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 #' results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100))
 #' head(results)
+#'
+#' # All transcripts in one tube, sharing one supply of each protein
+#' pooled <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100),
+#'   rna_conc = 1, shared_supply = TRUE)
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom data.table rbindlist
 #' @importFrom future.apply future_lapply
 #' @export
 simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc = 10,
-                                 k = 5, footprint = NULL, omega = 1) {
-  
-  # Input validation
-  for (f in fasta_file) {
-    if (!file.exists(f)) stop("FASTA file not found: ", f)
+                                 k = 5, footprint = NULL, omega = 1,
+                                 shared_supply = FALSE) {
+  checkSharedSupply(shared_supply)
+  seqs <- readFastaSequences(fasta_file)
+  rna <- resolveRnaConc(rna_conc, names(seqs))
+
+  if (shared_supply) {
+    return(simulateSharedSupply(seqs, rbp_models, protein_concs, rna, k,
+                                footprint = footprint, omega = omega))
   }
-  
-  # Read sequences from all files and combine them
-  seqs_dna_list <- lapply(fasta_file, Biostrings::readDNAStringSet)
-  seqs_dna <- do.call(c, seqs_dna_list)
-  n_seqs <- length(seqs_dna)
-  
-  seq_names <- names(seqs_dna)
-  if (is.null(seq_names) || any(seq_names == "")) {
-    warning("Sequence names missing, using Tx indices")
-    seq_names <- paste0("Tx", seq_len(n_seqs))
-  }
-  
-  get_seq_str <- function(i) {
-    seq_str <- as.character(seqs_dna[[i]])
-    gsub("T", "U", seq_str, fixed = TRUE)
-  }
-  
+
   run_seq <- function(i) {
-    seq_str <- get_seq_str(i)
-    res <- simulateBinding(seq_str, rbp_models, protein_concs, rna_conc, k,
+    res <- simulateBinding(seqs[[i]], rbp_models, protein_concs, rna[[i]], k,
                            footprint = footprint, omega = omega)
     if (is.null(res)) {
-      warning("Simulation returned NULL for ", seq_names[i])
+      warning("Simulation returned NULL for ", names(seqs)[i])
       return(NULL)
     }
-    res$transcript <- seq_names[i]
+    res$transcript <- names(seqs)[i]
     return(res)
   }
-  
+
   # Execute via future.apply (respects user-configured future::plan)
-  results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq, 
-                                              future.seed = TRUE, 
+  results_list <- future.apply::future_lapply(seq_along(seqs), run_seq,
+                                              future.seed = TRUE,
                                               future.packages = c("data.table", "Biostrings"))
-  
+
   data.table::rbindlist(results_list)
 }
 
@@ -398,14 +480,22 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' Simulates competitive binding for all sequences in one or more FASTA files across a concentration grid.
 #' Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 #'
+#' With \code{shared_supply = TRUE}, each grid point puts all sequences in
+#' one tube, each at the RNA concentration of that grid point, and they draw
+#' on one supply of each protein (see \code{\link{simulateBindingFasta}}).
+#' The work is then split over grid points instead of sequences.
+#'
 #' @param fasta_file Character vector of path(s) to FASTA files.
 #' @param rbp_models Named list of RBP models.
 #' @param protein_conc_grid List of numeric vectors for each RBP concentration.
-#' @param rna_conc_grid Numeric vector of RNA concentrations to sweep.
+#' @param rna_conc_grid Numeric vector of RNA concentrations to sweep. Each
+#'   value applies to every sequence.
 #' @param k K-mer size (default 5).
 #' @param footprint \code{NULL} (default) or footprint sizes; see
 #'   \code{\link{simulateBinding}}.
 #' @param omega Neighbor factor (default 1); see \code{\link{simulateBinding}}.
+#' @param shared_supply If \code{TRUE}, all sequences draw on one supply of
+#'   each protein. If \code{FALSE} (default), each sequence is simulated alone.
 #' @return A data.table with combined results, including a transcript column.
 #' @examples
 #' model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -424,42 +514,171 @@ simulateBindingFasta <- function(fasta_file, rbp_models, protein_concs, rna_conc
 #' @importFrom future.apply future_lapply
 #' @export
 simulateGridFasta <- function(fasta_file, rbp_models, protein_conc_grid, rna_conc_grid,
-                              k = 5, footprint = NULL, omega = 1) {
-  
-  # Input validation
-  for (f in fasta_file) {
-    if (!file.exists(f)) stop("FASTA file not found: ", f)
+                              k = 5, footprint = NULL, omega = 1,
+                              shared_supply = FALSE) {
+  checkSharedSupply(shared_supply)
+  seqs <- readFastaSequences(fasta_file)
+  n_seqs <- length(seqs)
+
+  if (shared_supply) {
+    prot_grid <- do.call(expand.grid, protein_conc_grid)
+    full_grid <- expand.grid(rna_conc = rna_conc_grid,
+                             ProteinGridRow = seq_len(nrow(prot_grid)))
+    message("Running grid simulation on ", n_seqs,
+            " sequences with one shared protein supply...")
+    run_point <- function(i) {
+      rna_c <- full_grid$rna_conc[i]
+      prot_concs <- unlist(prot_grid[full_grid$ProteinGridRow[i], , drop = FALSE])
+      names(prot_concs) <- colnames(prot_grid)
+      res <- simulateSharedSupply(seqs, rbp_models, prot_concs,
+                                  rep(rna_c, n_seqs), k,
+                                  footprint = footprint, omega = omega)
+      if (is.null(res)) return(NULL)
+      res$rna_conc <- rna_c
+      for (p in names(prot_concs)) {
+        res[[paste0("Conc_", p)]] <- prot_concs[[p]]
+      }
+      res
+    }
+    results_list <- future.apply::future_lapply(seq_len(nrow(full_grid)), run_point,
+                                                future.seed = TRUE,
+                                                future.packages = c("data.table"))
+    return(data.table::rbindlist(results_list))
   }
-  
-  # Read sequences from all files and combine them
-  seqs_dna_list <- lapply(fasta_file, Biostrings::readDNAStringSet)
-  seqs_dna <- do.call(c, seqs_dna_list)
-  n_seqs <- length(seqs_dna)
-  
-  seq_names <- names(seqs_dna)
-  if (is.null(seq_names) || any(seq_names == "")) {
-    warning("Sequence names missing, using Tx indices")
-    seq_names <- paste0("Tx", seq_len(n_seqs))
-  }
-  
+
   message("Running grid simulation on ", n_seqs, " sequences...")
-  
+
   run_seq_grid <- function(i) {
-    seq_str <- as.character(seqs_dna[[i]])
-    seq_str <- gsub("T", "U", seq_str, fixed = TRUE)
-    
-    res <- simulateGrid(seq_str, rbp_models, protein_conc_grid, rna_conc_grid,
+    res <- simulateGrid(seqs[[i]], rbp_models, protein_conc_grid, rna_conc_grid,
                         k = k, footprint = footprint, omega = omega)
     if (!is.null(res)) {
-      res$transcript <- seq_names[i]
+      res$transcript <- names(seqs)[i]
     }
     return(res)
   }
-  
+
   # Execute via future.apply (respects user-configured future::plan)
-  results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq_grid, 
-                                              future.seed = TRUE, 
+  results_list <- future.apply::future_lapply(seq_len(n_seqs), run_seq_grid,
+                                              future.seed = TRUE,
                                               future.packages = c("data.table", "Biostrings"))
-  
+
   data.table::rbindlist(results_list)
+}
+
+
+# ==============================================================================
+# Shared protein supply over many sequences
+# ==============================================================================
+
+# Read Sequences From FASTA File(s)
+#
+# @param fasta_file Character vector of FASTA paths.
+# @return Named character vector of RNA sequences (T changed to U).
+readFastaSequences <- function(fasta_file) {
+  for (f in fasta_file) {
+    if (!file.exists(f)) stop("FASTA file not found: ", f)
+  }
+  seqs_dna <- do.call(c, lapply(fasta_file, Biostrings::readDNAStringSet))
+  seq_names <- names(seqs_dna)
+  if (is.null(seq_names) || any(seq_names == "")) {
+    warning("Sequence names missing, using Tx indices")
+    seq_names <- paste0("Tx", seq_along(seqs_dna))
+  }
+  seqs <- gsub("T", "U", as.character(seqs_dna), fixed = TRUE)
+  stats::setNames(unname(seqs), seq_names)
+}
+
+# Check the shared_supply Argument
+checkSharedSupply <- function(shared_supply) {
+  if (!is.logical(shared_supply) || length(shared_supply) != 1L ||
+      is.na(shared_supply)) {
+    stop("shared_supply must be TRUE or FALSE.")
+  }
+}
+
+# RNA Concentration of Each Sequence
+#
+# @param rna_conc One value, a vector named with the sequence names, or an
+#   unnamed vector with one value per sequence in order.
+# @param seq_names Sequence names.
+# @return Numeric vector in the order of seq_names.
+resolveRnaConc <- function(rna_conc, seq_names) {
+  if (!is.numeric(rna_conc) || anyNA(rna_conc) || any(rna_conc < 0)) {
+    stop("rna_conc must be non-negative numbers.")
+  }
+  n <- length(seq_names)
+  if (length(rna_conc) == 1L && is.null(names(rna_conc))) {
+    return(rep(as.numeric(rna_conc), n))
+  }
+  if (!is.null(names(rna_conc))) {
+    if (anyDuplicated(seq_names)) {
+      stop("Sequence names are not unique, so rna_conc cannot be matched by name.")
+    }
+    if (!all(seq_names %in% names(rna_conc))) {
+      stop("A named rna_conc must have one value for each sequence. Missing: ",
+           paste(head(setdiff(seq_names, names(rna_conc))), collapse = ", "))
+    }
+    return(as.numeric(rna_conc[seq_names]))
+  }
+  if (length(rna_conc) != n) {
+    stop("An unnamed rna_conc must have one value or one value per sequence (",
+         n, ").")
+  }
+  as.numeric(rna_conc)
+}
+
+# Simulate Many Sequences With One Shared Protein Supply
+#
+# @param seqs Named character vector of RNA sequences.
+# @param rbp_models Named list of RBP models.
+# @param protein_concs Named protein concentrations.
+# @param rna Numeric vector of RNA concentrations, one per sequence.
+# @param k K-mer size.
+# @param footprint,omega See simulateBinding().
+# @return A data.table as from simulateBindingFasta(), or NULL when no
+#   sequence has a k-mer.
+simulateSharedSupply <- function(seqs, rbp_models, protein_concs, rna, k,
+                                 footprint = NULL, omega = 1) {
+  om_vec <- checkProteinInputs(rbp_models, protein_concs, footprint, omega)
+  rbp_names <- names(protein_concs)
+  p0_vec <- protein_concs[rbp_names]
+
+  sites <- lapply(seqs, prepareKmerSites, rbp_models = rbp_models,
+                  rbp_names = rbp_names, k = k)
+  keep <- which(!vapply(sites, is.null, logical(1)))
+  for (i in setdiff(seq_along(seqs), keep)) {
+    warning("Simulation returned NULL for ", names(seqs)[i])
+  }
+  if (length(keep) == 0L) return(NULL)
+
+  if (is.null(footprint)) {
+    # Every unique k-mer of every sequence is one site species, at the
+    # concentration of its sequence times its copy number.
+    site_conc <- unlist(lapply(keep, function(i) rna[i] * sites[[i]]$count))
+    kd_mat <- do.call(rbind, lapply(keep, function(i) sites[[i]]$kd_mat))
+    pool <- solveSharedPool(site_conc, kd_mat, p0_vec)
+    n_unique <- vapply(keep, function(i) length(sites[[i]]$count), integer(1))
+    first_row <- cumsum(c(0L, utils::head(n_unique, -1L)))
+    tracks <- lapply(seq_along(keep), function(t) {
+      s <- sites[[keep[t]]]
+      windowTrack(pool$theta[first_row[t] + s$kmer_index, , drop = FALSE],
+                  s$L, k)
+    })
+  } else {
+    w_vec <- resolveFootprint(footprint, rbp_names, k)
+    molecules <- lapply(keep, function(i) {
+      list(a_list = latticeAffinity(sites[[i]], w_vec, k), L = sites[[i]]$L,
+           rna_conc = rna[i])
+    })
+    pool <- solveLatticePoolMulti(molecules, w_vec, p0_vec, omega = om_vec)
+    tracks <- lapply(seq_along(keep), function(t) {
+      latticeTrack(pool$molecules[[t]]$starts, w_vec, sites[[keep[t]]]$L)
+    })
+  }
+
+  data.table::rbindlist(lapply(seq_along(keep), function(t) {
+    res <- buildTrackTable(seqs[[keep[t]]], tracks[[t]], rbp_names, protein_concs)
+    res$transcript <- names(seqs)[keep[t]]
+    res
+  }))
 }

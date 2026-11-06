@@ -11,7 +11,8 @@ simulateBindingFasta(
   rna_conc = 10,
   k = 5,
   footprint = NULL,
-  omega = 1
+  omega = 1,
+  shared_supply = FALSE
 )
 }
 \arguments{
@@ -21,7 +22,9 @@ simulateBindingFasta(
 
 \item{protein_concs}{Named numeric vector of protein concentrations.}
 
-\item{rna_conc}{RNA concentration (default 10).}
+\item{rna_conc}{RNA concentration (default 10). Either one value for all
+sequences, or one value per sequence: a vector named with the sequence
+names, or an unnamed vector in file order.}
 
 \item{k}{K-mer size (default 5).}
 
@@ -29,13 +32,33 @@ simulateBindingFasta(
 \code{\link{simulateBinding}}.}
 
 \item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
+
+\item{shared_supply}{If \code{TRUE}, all sequences draw on one supply of
+each protein. If \code{FALSE} (default), each sequence is simulated alone.}
 }
 \value{
 A data.table with combined results, including a transcript column.
+  The per-sequence columns are the same as for
+  \code{\link{simulateBinding}}. The density and fold-change columns are
+  computed within each sequence.
 }
 \description{
 Simulates competitive binding for all sequences in one or more FASTA files.
 Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
+}
+\details{
+By default (\code{shared_supply = FALSE}) each sequence is simulated alone,
+with the full protein supply, as with \code{\link{simulateBinding}}. With
+\code{shared_supply = TRUE}, all sequences are in one tube and draw on one
+supply of each protein. The model then solves one mass balance,
+\eqn{P_j = f_j + \sum_t c_t \langle N_j \rangle_t}, where \eqn{c_t} is the
+concentration of sequence \eqn{t} and \eqn{\langle N_j \rangle_t} is its
+expected number of bound proteins of RBP \eqn{j} (summed over windows
+without a footprint). Each sequence keeps its own windows or lattice, so no
+placement crosses from one sequence to the next. All sequences see the
+same free protein level \eqn{f_j}. This is the setup of an experiment that
+titrates protein into a mix of RNAs, and it assumes that the mix is well
+mixed and at equilibrium.
 }
 \examples{
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")
@@ -43,4 +66,8 @@ fasta_file <- system.file("extdata", "test_transcripts.fa", package = "RBPEqBind
 rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100))
 head(results)
+
+# All transcripts in one tube, sharing one supply of each protein
+pooled <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100),
+  rna_conc = 1, shared_supply = TRUE)
 }

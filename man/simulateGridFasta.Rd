@@ -11,7 +11,8 @@ simulateGridFasta(
   rna_conc_grid,
   k = 5,
   footprint = NULL,
-  omega = 1
+  omega = 1,
+  shared_supply = FALSE
 )
 }
 \arguments{
@@ -21,7 +22,8 @@ simulateGridFasta(
 
 \item{protein_conc_grid}{List of numeric vectors for each RBP concentration.}
 
-\item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep.}
+\item{rna_conc_grid}{Numeric vector of RNA concentrations to sweep. Each
+value applies to every sequence.}
 
 \item{k}{K-mer size (default 5).}
 
@@ -29,6 +31,9 @@ simulateGridFasta(
 \code{\link{simulateBinding}}.}
 
 \item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
+
+\item{shared_supply}{If \code{TRUE}, all sequences draw on one supply of
+each protein. If \code{FALSE} (default), each sequence is simulated alone.}
 }
 \value{
 A data.table with combined results, including a transcript column.
@@ -36,6 +41,12 @@ A data.table with combined results, including a transcript column.
 \description{
 Simulates competitive binding for all sequences in one or more FASTA files across a concentration grid.
 Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
+}
+\details{
+With \code{shared_supply = TRUE}, each grid point puts all sequences in
+one tube, each at the RNA concentration of that grid point, and they draw
+on one supply of each protein (see \code{\link{simulateBindingFasta}}).
+The work is then split over grid points instead of sequences.
 }
 \examples{
 model_file <- system.file("extdata", "model_RBP.csv", package = "RBPEqBind")

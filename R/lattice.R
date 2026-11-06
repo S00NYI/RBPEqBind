@@ -114,24 +114,31 @@ latticeStarts <- function(a_list, footprint, free, L,
 
 # Shared Protein Pool on the Lattice
 #
-# Solves P_j = f_j + rna_conc * <N_j>(f) for all RBPs, where <N_j> is the
-# expected number of bound proteins of RBP j per molecule. Uses the same
-# one-protein-at-a-time scheme as solveSharedPool().
+# Solves P_j = f_j + sum_t c_t * <N_j>_t(f) for all RBPs, where molecule t has
+# concentration c_t and <N_j>_t is its expected number of bound proteins of
+# RBP j. Each molecule is its own lattice, and all molecules draw on one
+# supply of each protein. Uses the same one-protein-at-a-time scheme as
+# solveSharedPool().
 #
+# @param molecules List with one entry per molecule. Each entry is a list
+#   with `a_list` (see latticeStarts()), `L` (length) and `rna_conc`.
 # @inheritParams latticeStarts
-# @param rna_conc RNA concentration.
 # @param protein_totals Total protein concentrations P_j.
 # @param tol Relative tolerance on the free protein levels.
 # @param max_iter Maximum number of sweeps over all proteins.
-# @return The result of latticeStarts() at the solution, plus `free`,
-#   `iterations` and `converged`.
-solveLatticePool <- function(a_list, footprint, L, rna_conc, protein_totals,
-                             omega = rep(1, length(a_list)),
-                             tol = 1e-10, max_iter = 1000L) {
+# @return A list with `molecules` (the result of latticeStarts() for each
+#   molecule at the solution), `free`, `iterations` and `converged`.
+solveLatticePoolMulti <- function(molecules, footprint, protein_totals,
+                                  omega = rep(1, length(protein_totals)),
+                                  tol = 1e-10, max_iter = 1000L) {
   free <- as.numeric(protein_totals)
-  active <- which(free > 0 & vapply(a_list, function(a) any(a > 0),
-                                    logical(1)))
-  converged <- length(active) == 0L || rna_conc == 0
+  binds <- vapply(seq_along(free), function(j) {
+    any(vapply(molecules, function(m) {
+      m$rna_conc > 0 && length(m$a_list[[j]]) > 0L && any(m$a_list[[j]] > 0)
+    }, logical(1)))
+  }, logical(1))
+  active <- which(free > 0 & binds)
+  converged <- length(active) == 0L
   iter <- 0L
 
   while (!converged && iter < max_iter) {
@@ -142,8 +149,14 @@ solveLatticePool <- function(a_list, footprint, L, rna_conc, protein_totals,
       h <- function(u) {
         f <- free
         f[j] <- exp(u)
-        nb <- latticeStarts(a_list, footprint, f, L, omega)$n_bound[j]
-        f[j] + rna_conc * nb - p_j
+        bound <- 0
+        for (m in molecules) {
+          if (m$rna_conc > 0) {
+            bound <- bound + m$rna_conc *
+              latticeStarts(m$a_list, footprint, f, m$L, omega)$n_bound[j]
+          }
+        }
+        f[j] + bound - p_j
       }
       hi <- log(p_j)
       lo <- max(hi - log(1e18), log(.Machine$double.xmin))
@@ -163,8 +176,29 @@ solveLatticePool <- function(a_list, footprint, L, rna_conc, protein_totals,
     warning("Lattice protein pool did not converge in ", max_iter,
             " iterations.")
   }
-  out <- latticeStarts(a_list, footprint, free, L, omega)
-  c(out, list(free = free, iterations = iter, converged = converged))
+  outs <- lapply(molecules, function(m) {
+    latticeStarts(m$a_list, footprint, free, m$L, omega)
+  })
+  list(molecules = outs, free = free, iterations = iter,
+       converged = converged)
+}
+
+# Shared Protein Pool on the Lattice, One Molecule
+#
+# solveLatticePoolMulti() for one molecule at concentration rna_conc.
+#
+# @inheritParams latticeStarts
+# @param rna_conc RNA concentration.
+# @inheritParams solveLatticePoolMulti
+# @return The result of latticeStarts() at the solution, plus `free`,
+#   `iterations` and `converged`.
+solveLatticePool <- function(a_list, footprint, L, rna_conc, protein_totals,
+                             omega = rep(1, length(a_list)),
+                             tol = 1e-10, max_iter = 1000L) {
+  sol <- solveLatticePoolMulti(
+    list(list(a_list = a_list, L = L, rna_conc = rna_conc)),
+    footprint, protein_totals, omega = omega, tol = tol, max_iter = max_iter)
+  c(sol$molecules[[1]], sol[c("free", "iterations", "converged")])
 }
 
 # Footprint for Each RBP

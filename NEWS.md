@@ -39,6 +39,19 @@
 - Tests compare the lattice with brute-force enumeration and with the
   cooperative McGhee-von Hippel formula.
 
+### Shared protein supply over many sequences (new argument)
+- `simulateBindingFasta()` and `simulateGridFasta()` gain
+  `shared_supply = FALSE`. With `TRUE`, all sequences are in one tube and draw
+  on one supply of each protein. The model solves one mass balance over all
+  sequences, and each sequence keeps its own windows or lattice, so no
+  placement crosses from one sequence to the next. With `FALSE`, each
+  sequence is simulated alone, as before, and the output does not change.
+- `simulateBindingFasta()` now accepts one `rna_conc` value per sequence,
+  named with the sequence names or in file order.
+- Tests compare the many-molecule lattice balance with enumeration, and check
+  that two identical sequences at concentration c give the same result as one
+  sequence alone at 2c.
+
 ### Documentation
 - The help page of `simulateBinding()` now describes every output column.
   It states that `_density_fc` and `_occupancy_fc` mean a fold change over a

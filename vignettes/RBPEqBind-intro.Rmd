@@ -449,9 +449,8 @@ Grid sweep results can also be exported in JSON/CSV or SummarizedExperiment form
 # Scenario 3: RBPs Binding to Multiple Target RNAs
 
 To simulate RBP binding to multiple RNA sequences (e.g., transcript sequences 
-from bioMart), RBPEqBind provides functions to load FASTA files directly. Note that 
-binding simulation is performed on a sequence-by-sequence basis, not simultaneously 
-on all RNA sequences in the FASTA file.
+from bioMart), RBPEqBind provides functions to load FASTA files directly. By
+default, each sequence is simulated alone, with the full protein supply.
 
 ```{r scenario3-simulate}
 # Load sample FASTA from package
@@ -468,6 +467,31 @@ head(res_fasta)
 ```
 
 Visualization and result export are performed the same way as in Scenario 1.
+
+## One shared protein supply
+
+In an experiment that titrates protein into a mix of RNAs, all RNAs take
+protein from the same supply. Set `shared_supply = TRUE` to model this. The
+model then solves one mass balance over all sequences, and every sequence
+sees the same free protein level. Each sequence keeps its own windows or
+lattice. `rna_conc` can be one value for all sequences or one value per
+sequence.
+
+```{r scenario3-shared}
+res_alone <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 20),
+                                  rna_conc = 2, k = 5, footprint = 7)
+res_shared <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 20),
+                                   rna_conc = 2, k = 5, footprint = 7,
+                                   shared_supply = TRUE)
+# Mean occupancy of each transcript, alone and in the shared tube
+merge(res_alone[, .(alone = mean(HH)), by = transcript],
+      res_shared[, .(shared = mean(HH)), by = transcript], by = "transcript")
+```
+
+When protein is limiting, the shared tube has less free protein, so every
+transcript has lower occupancy. When protein is in large excess over the
+binding sites, the two results agree. The same argument exists in
+`simulateGridFasta()`, where each grid point is one tube.
 
 # Scenario 4: RBPs Binding to Multiple Target RNAs Across Different Concentrations
 
