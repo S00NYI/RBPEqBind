@@ -74,10 +74,10 @@ test_that("simulateBinding high affinity has higher occupancy", {
 
 test_that("every copy of a motif gets the same occupancy as a single-copy motif of equal Kd", {
   # AAAAA appears many times, CCCCC once, both with the same Kd. With one
-  # shared protein supply, both see the same free protein, so their windows
+  # shared protein pool, both see the same free protein, so their windows
   # must have the same occupancy, however many copies exist.
   # All other 5-mers share one weak Kd, so a nucleotide's occupancy depends
-  # only on how its covering windows bind. The protein supply (50) is below
+  # only on how its covering windows bind. The protein pool (50) is below
   # the AAAAA sites (20 copies x rna_conc 5 = 100), so the pool matters here.
   b <- c("A", "C", "G", "U")
   all5 <- do.call(paste0, expand.grid(b, b, b, b, b, stringsAsFactors = FALSE))

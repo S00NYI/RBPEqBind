@@ -8,11 +8,11 @@
 [![R Version](https://img.shields.io/badge/R-%3E%3D%204.6.0-blue)](https://cran.r-project.org/)
 <!-- badges: end -->
 
-**RBPEqBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) to RNA sequences using equilibrium binding kinetics.
+**RBPEqBind** simulates competitive binding of multiple RNA-binding proteins (RBPs) to RNA sequences with an equilibrium binding model. All binding sites take protein from one pool of each RBP.
 
 ## Installation
 
-### From Bioconductor (Recommended)
+### From Bioconductor
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -21,13 +21,13 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("RBPEqBind")
 ```
 
-### From GitHub (Development Version)
+### From GitHub
 
 ```r
-if (!requireNamespace("devtools", quietly = TRUE))
-    install.packages("devtools")
+if (!requireNamespace("pak", quietly = TRUE))
+    install.packages("pak")
 
-devtools::install_github("S00NYI/RBPEqBind")
+pak::pak("S00NYI/RBPEqBind")
 ```
 
 ## Quick Start
@@ -57,7 +57,10 @@ plotBinding(results, rbp = c("HH", "HL"))
 
 - **Competitive binding simulation** for multiple RBPs
 - **Concentration grid sweeps** for parameter exploration
-- **FASTA file support** (`simulateBindingFasta()`, `simulateGridFasta()`) for multi-sequence analysis
+- **FASTA file support** (`simulateBindingFasta()`, `simulateGridFasta()`) for multi-sequence analysis, with DNA or RNA input (`seq_type`)
+- **Footprint** (`footprint`): a bound RBP covers a set number of nucleotides, and bound proteins may not overlap
+- **One RBP pool for several RNAs** (`shared_protein = TRUE`)
+- **RNA accessibility** (`accessibility`, `readAccessibility()`) from RNAplfold unpaired probabilities
 - **Visualization** with binding profiles and heatmaps
 - **Genomic coordinate parsing** from FASTA headers for BED export and peak-calling
 
@@ -65,12 +68,12 @@ plotBinding(results, rbp = c("HH", "HL"))
 
 See the [package vignette](vignettes/RBPEqBind-intro.Rmd) for detailed examples covering:
 
-1. Single sequence simulation
-2. Concentration grid sweeps
-3. FASTA file processing
-4. Visualization options
+1. One RNA
+2. One RNA with a concentration grid
+3. Several RNAs (with the option of one RBP pool for all RNAs)
+4. Several RNAs with a concentration grid
 
-For detailed usage, see Figure_Scripts folder in: https://github.com/S00NYI/BITS_Specificity
+For detailed usage, see Figure_Scripts folder in: https://github.com/S00NYI/BITS_Specificity (uses an earlier version, RBPEqBind 0.99.0)
 
 ## Citation
 
@@ -80,13 +83,9 @@ If you use RBPEqBind in your research, please cite:
 > *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
 > bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4
 
-## Work in Progress
-
-Planned developments for `RBPEqBind` include:
-- **CLIP-Seq Concordance**: Directly comparing simulated occupancy with experimental CLIP-seq peaks or crosslink signal tracks.
-- **RNA Structure Integration**: Adding accessibility masking using SHAPE/DMS experimental reactivity profiles or pre-computed structures.
+\* The simulation results in this manuscript were made with RBPEqBind 0.99.0. Later versions give numerically different results, but with the default settings the conclusions of those simulations do not change.
 
 ## AI Usage Disclosure
 
-This package's Bioconductor review remediation, API refactoring, and test suite expansion were developed in collaboration with Google Antigravity.
+This package's Bioconductor review remediation, API refactoring, and test suite expansion were developed in collaboration with Claude Code.
 For the original R and python implementation of the simulation model, see the [BITS_Specificity repository](https://github.com/S00NYI/BITS_Specificity).

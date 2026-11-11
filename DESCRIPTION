@@ -1,6 +1,6 @@
 Package: RBPEqBind
 Title: RNA-Binding Protein Competitive Binding Simulation
-Version: 0.99.4
+Version: 0.99.5
 Authors@R: c(person("Soon", "Yi", 
                     email = "cu.soonyi@gmail.com", 
                     role = c("aut", "cre"),

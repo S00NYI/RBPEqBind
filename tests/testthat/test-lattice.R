@@ -3,12 +3,11 @@
 # and simulateBinding(footprint = ...)
 
 # Reference: enumerate every allowed arrangement of non-overlapping proteins.
-# Two proteins of the same RBP j that touch get the extra factor omega[j].
-brute_force <- function(q_list, w, L, omega = rep(1, length(q_list))) {
+brute_force <- function(q_list, w, L) {
   n <- length(q_list)
   starts <- lapply(q_list, function(q) numeric(length(q)))
   Z <- 0
-  visit <- function(i, weight, placed, last_type) {
+  visit <- function(i, weight, placed) {
     if (i > L) {
       Z <<- Z + weight
       for (pl in placed) {
@@ -16,16 +15,14 @@ brute_force <- function(q_list, w, L, omega = rep(1, length(q_list))) {
       }
       return(invisible(NULL))
     }
-    visit(i + 1L, weight, placed, 0L)
+    visit(i + 1L, weight, placed)
     for (j in seq_len(n)) {
       if (i <= length(q_list[[j]])) {
-        f <- if (last_type == j) omega[j] else 1
-        visit(i + w[j], weight * q_list[[j]][i] * f,
-              c(placed, list(c(j, i))), j)
+        visit(i + w[j], weight * q_list[[j]][i], c(placed, list(c(j, i))))
       }
     }
   }
-  visit(1L, 1, list(), 0L)
+  visit(1L, 1, list())
   list(Z = Z, starts = lapply(starts, function(s) s / Z))
 }
 
@@ -177,96 +174,4 @@ test_that("simulateGrid passes the footprint on", {
   one <- simulateBinding("AAUUAAUU", models, c(RBP1 = 100), rna_conc = 1, k = 2,
                          footprint = 3)
   expect_equal(g[Conc_RBP1 == 100]$RBP1, one$RBP1)
-})
-
-test_that("the neighbor factor matches brute-force enumeration", {
-  set.seed(14)
-  L <- 13L
-  w <- c(2L, 3L)
-  q <- list(10^runif(L - w[1] + 1, -1, 1), 10^runif(L - w[2] + 1, -1, 1))
-  for (om in list(c(5, 1), c(0.2, 3), c(0, 10))) {
-    lat <- latticeStarts(q, w, c(1, 1), L, omega = om)
-    ref <- brute_force(q, w, L, omega = om)
-    expect_equal(lat$logZ, log(ref$Z), tolerance = 1e-12)
-    expect_equal(lat$starts[[1]], ref$starts[[1]], tolerance = 1e-12)
-    expect_equal(lat$starts[[2]], ref$starts[[2]], tolerance = 1e-12)
-  }
-})
-
-test_that("two touching sites give 0.50, 0.85 and 0.33 for omega 1, 10 and 0", {
-  # Footprint 1 on 2 nucleotides: states empty, A, B, both (weight omega)
-  for (case in list(c(1, 2 / 4), c(10, 11 / 13), c(0, 1 / 3))) {
-    lat <- latticeStarts(list(c(1, 1)), 1L, 1, 2L, omega = case[1])
-    expect_equal(lat$starts[[1]][1], case[2], tolerance = 1e-14)
-  }
-})
-
-test_that("omega = 1 gives the same result as no neighbor factor", {
-  set.seed(15)
-  q <- list(10^runif(40, -1, 1))
-  a <- latticeStarts(q, 4L, 1, 43L)
-  b <- latticeStarts(q, 4L, 1, 43L, omega = 1)
-  expect_equal(a$starts, b$starts)
-})
-
-test_that("a long uniform lattice matches cooperative McGhee-von Hippel", {
-  # McGhee and von Hippel (1974), cooperative case: with r = 1 - n nu and
-  # R = sqrt((1 - (n + 1) nu)^2 + 4 omega nu r),
-  # nu = q r ((2 omega - 1) r + nu - R)^(n - 1) / (2 (omega - 1) r)^(n - 1)
-  #        * ((1 - (n + 1) nu + R) / (2 r))^2
-  mvh <- function(q, n, om) {
-    f <- function(nu) {
-      r <- 1 - n * nu
-      R <- sqrt((1 - (n + 1) * nu)^2 + 4 * om * nu * r)
-      nu - q * r * (((2 * om - 1) * r + nu - R) / (2 * (om - 1) * r))^(n - 1) *
-        ((1 - (n + 1) * nu + R) / (2 * r))^2
-    }
-    stats::uniroot(f, c(1e-12, 1 / n - 1e-9), tol = 1e-14)$root
-  }
-  L <- 4000L
-  for (n in c(3L, 7L)) {
-    for (om in c(0.3, 5, 40)) {
-      for (q in c(0.01, 0.2)) {
-        lat <- latticeStarts(list(rep(q, L - n + 1)), n, 1, L, omega = om)
-        mid <- lat$starts[[1]][1800:2200]
-        expect_equal(mean(mid), mvh(q, n, om), tolerance = 1e-6)
-      }
-    }
-  }
-})
-
-test_that("the lattice pool with a neighbor factor satisfies the mass balance", {
-  set.seed(16)
-  L <- 100L
-  w <- c(4L, 6L)
-  a <- list(10^runif(L - w[1] + 1, -3, 0), 10^runif(L - w[2] + 1, -3, 0))
-  sol <- solveLatticePool(a, w, L, rna_conc = 5, protein_totals = c(40, 30),
-                          omega = c(8, 0.5))
-  expect_true(sol$converged)
-  expect_lt(max(abs(sol$free + 5 * sol$n_bound - c(40, 30)) / c(40, 30)), 1e-8)
-})
-
-test_that("resolveOmega checks its input", {
-  expect_equal(resolveOmega(2, c("A", "B")), c(A = 2, B = 2))
-  expect_equal(resolveOmega(c(B = 3, A = 0.5), c("A", "B")), c(A = 0.5, B = 3))
-  expect_error(resolveOmega(-1, "A"), ">= 0")
-  expect_error(resolveOmega(c(1, 2), c("A", "B")), "named")
-})
-
-test_that("simulateBinding needs a footprint for omega other than 1", {
-  models <- list(RBP1 = data.table::data.table(motif = c("AA", "AU", "UA", "UU"),
-                                               Kd = c(10, 50, 50, 100)))
-  expect_error(simulateBinding("AAUU", models, c(RBP1 = 10), k = 2, omega = 5),
-               "needs a footprint")
-  expect_silent(simulateBinding("AAUU", models, c(RBP1 = 10), k = 2, omega = 1))
-})
-
-test_that("positive cooperativity raises binding on a uniform tract", {
-  models <- list(RBP1 = data.table::data.table(motif = c("UU"), Kd = 100))
-  seq <- strrep("U", 60)
-  cov <- vapply(c(0.2, 1, 10), function(om) {
-    sum(simulateBinding(seq, models, c(RBP1 = 10), rna_conc = 1e-9, k = 2,
-                        footprint = 3, omega = om)$RBP1)
-  }, numeric(1))
-  expect_true(all(diff(cov) > 0))
 })

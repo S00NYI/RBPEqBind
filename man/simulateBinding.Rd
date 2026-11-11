@@ -11,7 +11,7 @@ simulateBinding(
   rna_conc = 10,
   k = 5,
   footprint = NULL,
-  omega = 1
+  accessibility = NULL
 )
 }
 \arguments{
@@ -31,9 +31,12 @@ number of nucleotides a bound RBP covers. Either one integer for all RBPs
 or a named integer vector with one value per RBP. Each value must be at
 least \code{k}.}
 
-\item{omega}{Neighbor factor (default 1, no effect). Either one number for
-all RBPs or a named vector with one value per RBP. Each value must be
-\code{>= 0}. Values other than 1 need a \code{footprint}.}
+\item{accessibility}{\code{NULL} (default, RNA fully accessible) or a
+numeric matrix with one row per nucleotide of \code{sequence}. Column
+\eqn{l} is the probability that the \eqn{l} nucleotides ending at that
+row are all unpaired (the layout of an RNAplfold \code{*_lunp} file; see
+\code{\link{readAccessibility}}). It needs at least \code{k} columns.
+Values must be between 0 and 1.}
 }
 \value{
 A data.table with one row per nucleotide and these columns:
@@ -62,7 +65,7 @@ Simulates competitive binding of multiple RBPs to a single RNA sequence.
 }
 \details{
 Each k-mer window of the sequence is a binding site. All sites draw on one
-shared supply of each protein. For free protein concentrations \eqn{f_j},
+shared protein pool of each protein. For free protein concentrations \eqn{f_j},
 the fraction of site \eqn{i} bound by RBP \eqn{j} is
 \deqn{\theta_{ij} = \frac{f_j / K_{d,ij}}{1 + \sum_m f_m / K_{d,im}}.}
 The free concentrations satisfy the mass balance
@@ -81,10 +84,25 @@ solves the same shared protein balance, with bound protein equal to
 The occupancy at a nucleotide is then the probability that the nucleotide
 is covered by the RBP.
 
-With \code{omega}, two proteins of the same RBP whose footprints touch
-(the second starts right after the first ends) give their arrangement the
-extra factor \code{omega}. Values above 1 make neighbors help each other,
-values below 1 make them hinder each other, and 1 means no effect.
+With \code{accessibility}, RNA structure can hide binding sites. For a
+k-mer window that starts at \eqn{s}, let \eqn{a(s)} be the probability
+that its \code{k} nucleotides are all unpaired. A protein binds only an
+unpaired window, with the same \eqn{K_d}. The model assumes that each RNA
+molecule switches between paired and unpaired at that window, and that a
+bound protein holds the window unpaired. Then the window has three states,
+with the weights \eqn{1 - a} (paired), \eqn{a} (unpaired, free) and
+\eqn{a f_j / K_{d,j}} (unpaired, bound by RBP \eqn{j}), and
+\deqn{\theta_{ij} = \frac{a f_j / K_{d,ij}}{1 + \sum_m a f_m / K_{d,im}}.}
+So the binding weight of the window, \eqn{f_j / K_d}, is multiplied by
+\eqn{a(s)}. \eqn{K_d} itself does not change. With a footprint, the weight
+of each placement is multiplied by \eqn{a} of the k-mer in the middle of
+the footprint (the k-mer that sets the affinity). The same \eqn{a(s)}
+applies to every RBP. The model does not include the effect of a bound
+protein on the structure of other windows. RBPEqBind does not fold RNA:
+compute the probabilities with a folding program such as ViennaRNA
+\code{RNAplfold -u} and read them with \code{\link{readAccessibility}}.
+For a model in which binding and folding are computed together, see
+RBPBind (Gaither et al. 2022, J Mol Biol).
 }
 \examples{
 # Load and process model

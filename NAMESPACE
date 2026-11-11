@@ -10,33 +10,41 @@ export(makeSE)
 export(plotBinding)
 export(plotGrid)
 export(plotHeatmap)
+export(readAccessibility)
 export(setModel)
 export(simulateBinding)
 export(simulateBindingFasta)
 export(simulateGrid)
 export(simulateGridFasta)
 export(viewModel)
-importFrom(Biostrings,readDNAStringSet)
+importFrom(Biostrings,
+  readDNAStringSet,
+  readRNAStringSet
+)
 importFrom(GenomicRanges,GRanges)
 importFrom(IRanges,IRanges)
 importFrom(S4Vectors,DataFrame)
 importFrom(SummarizedExperiment,SummarizedExperiment)
-importFrom(data.table,as.data.table)
-importFrom(data.table,copy)
-importFrom(data.table,first)
-importFrom(data.table,fread)
-importFrom(data.table,frollmean)
-importFrom(data.table,fwrite)
-importFrom(data.table,last)
-importFrom(data.table,rbindlist)
-importFrom(data.table,rleid)
-importFrom(data.table,setkey)
-importFrom(data.table,setkeyv)
-importFrom(data.table,setnames)
+importFrom(data.table,
+  as.data.table,
+  copy,
+  first,
+  fread,
+  frollmean,
+  fwrite,
+  last,
+  rbindlist,
+  rleid,
+  setkey,
+  setkeyv,
+  setnames
+)
 importFrom(future.apply,future_lapply)
-importFrom(jsonlite,fromJSON)
-importFrom(jsonlite,stream_in)
-importFrom(jsonlite,write_json)
+importFrom(jsonlite,
+  fromJSON,
+  stream_in,
+  write_json
+)
 importFrom(rtracklayer,export.bed)
 importFrom(stats,setNames)
 importFrom(utils,head)

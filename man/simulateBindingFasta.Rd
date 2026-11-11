@@ -11,8 +11,9 @@ simulateBindingFasta(
   rna_conc = 10,
   k = 5,
   footprint = NULL,
-  omega = 1,
-  shared_supply = FALSE
+  shared_protein = FALSE,
+  accessibility = NULL,
+  seq_type = c("DNA", "RNA")
 )
 }
 \arguments{
@@ -31,10 +32,17 @@ names, or an unnamed vector in file order.}
 \item{footprint}{\code{NULL} (default) or footprint sizes; see
 \code{\link{simulateBinding}}.}
 
-\item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
-
-\item{shared_supply}{If \code{TRUE}, all sequences draw on one supply of
+\item{shared_protein}{If \code{TRUE}, all sequences draw on one pool of
 each protein. If \code{FALSE} (default), each sequence is simulated alone.}
+
+\item{accessibility}{\code{NULL} (default) or a list with one
+accessibility matrix per sequence, named with the sequence names (the
+FASTA headers); see \code{\link{simulateBinding}}.}
+
+\item{seq_type}{Alphabet of the FASTA file: \code{"DNA"} (default; T is
+changed to U after reading) or \code{"RNA"} (the file holds U). A letter
+that does not belong to the chosen alphabet (for example U in a DNA file)
+stops the function with an error.}
 }
 \value{
 A data.table with combined results, including a transcript column.
@@ -47,10 +55,10 @@ Simulates competitive binding for all sequences in one or more FASTA files.
 Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 }
 \details{
-By default (\code{shared_supply = FALSE}) each sequence is simulated alone,
-with the full protein supply, as with \code{\link{simulateBinding}}. With
-\code{shared_supply = TRUE}, all sequences are in one tube and draw on one
-supply of each protein. The model then solves one mass balance,
+By default (\code{shared_protein = FALSE}) each sequence is simulated alone,
+with the full protein amount, as with \code{\link{simulateBinding}}. With
+\code{shared_protein = TRUE}, all sequences are in one tube and draw on one
+pool of each protein. The model then solves one mass balance,
 \eqn{P_j = f_j + \sum_t c_t \langle N_j \rangle_t}, where \eqn{c_t} is the
 concentration of sequence \eqn{t} and \eqn{\langle N_j \rangle_t} is its
 expected number of bound proteins of RBP \eqn{j} (summed over windows
@@ -67,7 +75,7 @@ rbp_models <- setModel(loadModel(model_file, rbp = c("HH", "HL")))
 results <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100))
 head(results)
 
-# All transcripts in one tube, sharing one supply of each protein
+# All transcripts in one tube, sharing one pool of each protein
 pooled <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 100, HL = 100),
-  rna_conc = 1, shared_supply = TRUE)
+  rna_conc = 1, shared_protein = TRUE)
 }

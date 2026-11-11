@@ -1,15 +1,16 @@
 # RBPEqBind News
 
-## Development version (branch dev-v2, not released)
+## Version 0.99.5
 
-### Shared protein pool (changes numerical output)
+### One protein pool per RBP (changes numerical output when protein is limiting)
 - `simulateBinding()` now solves one mass balance for each RBP across all
-  binding sites of the sequence. All sites draw on one shared supply of each
-  protein, so total bound protein can no longer exceed total protein.
-- The copy-number scaling of the RNA concentration (`rna_conc * count` per
-  k-mer) is removed. Every copy of a k-mer now has the same binding
-  probability. The copy number enters only as the amount of protein that the
-  copies take from the supply.
+  binding windows of the sequence: total protein = free protein + bound
+  protein. All windows of a sequence take protein from this one pool, so total bound
+  protein can no longer exceed total protein. In 0.99.4, each k-mer was a
+  site at `rna_conc` times its copy number, and the protein pool was not
+  shared between different k-mers.
+- Every copy of a k-mer now has the same binding probability. The copy number
+  enters only as the amount of protein that the copies take from the pool.
 - When protein is in large excess over RNA, results agree with 0.99.4. When
   protein is limiting, occupancies are lower than in 0.99.4.
 - `simulateBinding()` now checks that `protein_concs` and `rna_conc` are
@@ -28,29 +29,51 @@
   nucleotide is covered by the RBP. Without one, it stays the mean over the
   windows that cover the nucleotide.
 - The k-mer in the middle of the footprint sets the affinity of a placement.
+- Tests compare the lattice with brute-force enumeration and with the
+  McGhee-von Hippel formula.
 - The error message in `simulateGrid()` now names `simulateGridFasta()`.
 
-### Neighbor factor (new argument)
-- The same four functions gain `omega = 1`. With a footprint, two proteins of
-  the same RBP whose footprints touch multiply the weight of their arrangement
-  by `omega`. Values above 1 make neighbors help each other, values below 1
-  make them hinder each other, and 1 has no effect. Values other than 1 need a
-  footprint.
-- Tests compare the lattice with brute-force enumeration and with the
-  cooperative McGhee-von Hippel formula.
-
-### Shared protein supply over many sequences (new argument)
+### One protein pool for several RNAs (new option)
 - `simulateBindingFasta()` and `simulateGridFasta()` gain
-  `shared_supply = FALSE`. With `TRUE`, all sequences are in one tube and draw
-  on one supply of each protein. The model solves one mass balance over all
+  `shared_protein = FALSE`. Use it to model one protein pool that binds
+  several different RNAs, for example protein titrated into a mix of
+  transcripts. With `TRUE`, all sequences are in one tube and take
+  protein from one pool of each RBP. The model solves one mass balance over all
   sequences, and each sequence keeps its own windows or lattice, so no
   placement crosses from one sequence to the next. With `FALSE`, each
   sequence is simulated alone, as before, and the output does not change.
 - `simulateBindingFasta()` now accepts one `rna_conc` value per sequence,
-  named with the sequence names or in file order.
+  named with the sequence names or in file order. In `simulateGridFasta()`, each
+  value of `rna_conc_grid` applies to every sequence.
 - Tests compare the many-molecule lattice balance with enumeration, and check
   that two identical sequences at concentration c give the same result as one
   sequence alone at 2c.
+
+### FASTA input (new argument)
+- `simulateBindingFasta()` and `simulateGridFasta()` gain
+  `seq_type = c("DNA", "RNA")`. With `"DNA"` (default, as before), T is
+  changed to U after reading. With `"RNA"`, the file can hold U.
+- A letter outside the chosen alphabet (for example U in a file read as DNA)
+  now stops the function with an error. Before, Biostrings removed such
+  letters with only a warning, which shortened the sequence.
+
+### RNA accessibility (new argument and function)
+- `simulateBinding()`, `simulateGrid()`, `simulateBindingFasta()` and
+  `simulateGridFasta()` gain `accessibility = NULL`. It takes a matrix with
+  one row per nucleotide, where column l is the probability that the l
+  nucleotides ending there are all unpaired (the layout of an RNAplfold
+  `-u` file). The FASTA functions take a list of such matrices, named with
+  the sequence names. A protein binds only an unpaired k-mer window. The
+  binding weight of each window (with a footprint: of each placement) is
+  multiplied by a, the probability that the k-mer is unpaired. This assumes
+  that the window switches between paired and unpaired and that a bound
+  protein holds it unpaired. Kd does not change, and a applies to every
+  RBP. With `NULL`, the output does not change.
+- New `readAccessibility()` reads an RNAplfold `*_lunp` file. RBPEqBind does
+  not fold RNA and does not depend on ViennaRNA.
+- Tests check that accessibility of 1 gives the same result as `NULL`,
+  compare single sites with the three-state formula, check the mass balance,
+  and check the FASTA and shared-protein paths.
 
 ### Documentation
 - The help page of `simulateBinding()` now describes every output column.

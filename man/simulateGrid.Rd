@@ -11,7 +11,7 @@ simulateGrid(
   rna_conc_grid,
   k = 5,
   footprint = NULL,
-  omega = 1
+  accessibility = NULL
 )
 }
 \arguments{
@@ -28,7 +28,8 @@ simulateGrid(
 \item{footprint}{\code{NULL} (default) or footprint sizes; see
 \code{\link{simulateBinding}}.}
 
-\item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
+\item{accessibility}{\code{NULL} (default) or an accessibility matrix for
+\code{sequence}; see \code{\link{simulateBinding}}.}
 }
 \value{
 A data.table with results for all grid combinations.

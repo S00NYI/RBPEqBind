@@ -43,9 +43,10 @@ based on equilibrium binding kinetics. The simulation follows two key principles
 
 1. **Simultaneous competition**: All RBPs are introduced simultaneously, ensuring 
    equal chances of interaction with the RNA.
-2. **Independent binding sites with a shared protein supply**: Each binding site
-   binds independently of the others, but all sites draw on one supply of each
-   RBP. Bound protein can therefore never exceed the total protein.
+2. **Independent binding sites with one protein pool**: Each binding site
+   binds independently of the others, but all sites take protein from one
+   pool of each RBP. Bound protein can therefore never exceed the total
+   protein.
 
 ## Motivation
 
@@ -68,8 +69,8 @@ by RBP $i$ is
 
 $$p_{w,i} = \frac{f_i / K_{D,w,i}}{1 + \sum_m f_m / K_{D,w,m}}$$
 
-Each window is one site at the RNA concentration $[R_0]$. All windows draw on
-the same supply of each RBP, so the free concentrations follow from the mass
+Each window is one site at the RNA concentration $[R_0]$. All windows take
+protein from the same pool of each RBP, so the free concentrations follow from the mass
 balance
 
 $$[P_{0,i}] = f_i + [R_0] \sum_w p_{w,i}$$
@@ -100,16 +101,27 @@ $\sum P_i(s)$ over the placements that include it. The shared protein balance
 uses the expected number of bound proteins per molecule. With one placement
 per molecule, $P_i = q_i / (1 + q_i)$, the same as an independent site.
 
-### Neighbor factor (optional)
+### RNA accessibility (optional)
 
-With a footprint, the `omega` argument sets a neighbor factor $\omega_i$ for
-each RBP. When two proteins of the same RBP touch, so that the second starts
-right after the first ends, the weight of the arrangement is multiplied by
-$\omega_i$. With $\omega_i > 1$, neighbors help each other and binding spreads
-along runs of sites. With $\omega_i < 1$, they hinder each other. With
-$\omega_i = 1$ (the default), there is no effect. Sites with no neighbor are
-not affected. For a long uniform lattice, the model reproduces the cooperative
-result of McGhee and von Hippel (1974).
+RNA structure can hide binding sites. The `accessibility` argument gives,
+for each $k$-mer window that starts at $s$, the probability $a(s)$ that its
+$k$ nucleotides are all unpaired. A protein binds only an unpaired window,
+with the same $K_D$. The model assumes that each RNA molecule switches
+between paired and unpaired at the window, and that a bound protein holds
+the window unpaired. The window then has three states, with these weights:
+paired $1 - a$, unpaired and free $a$, unpaired and bound $a\,P/K_D$. So
+
+$$\theta(s) = \frac{a(s)\,P/K_D}{1 + a(s)\,P/K_D}.$$
+
+The binding weight $P/K_D$ of the window is multiplied by $a(s)$. The
+affinity ($K_D$) does not change, and the same $a(s)$ applies to every RBP.
+With a footprint, the weight of each placement is multiplied by $a$ of the
+$k$-mer in the middle of the footprint. The model does not include the
+effect of a bound protein on the structure of other windows. RBPEqBind does
+not fold RNA. Compute the probabilities with a folding program, for example
+ViennaRNA `RNAplfold -u`, and read them with `readAccessibility()`. For a
+model in which binding and folding are computed together, see RBPBind
+(Gaither et al., 2022).
 
 For RBP enrichment analysis:
 - With **a single active RBP**, fold-change (`_occupancy_fc` and `_density_fc`) represents enrichment relative to a uniform distribution across the transcript.
@@ -128,7 +140,12 @@ please refer to:
 
 > Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2025). 
 > *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
-> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4
+> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4[^fig4g]
+
+[^fig4g]: The simulation results in this manuscript were made with
+    RBPEqBind 0.99.0. Later versions give numerically different results, but
+    with the default settings the conclusions of those simulations do not
+    change.
 
 # Installation
 
@@ -307,6 +324,45 @@ res$transcript <- "Custom RNA"
 head(res)
 ```
 
+All windows of the RNA take protein from one pool of each RBP. When protein
+is in large excess over the RNA, the free protein is almost equal to the
+total protein. When protein is limiting, bound protein lowers the free
+protein, and occupancy is lower than the $K_D$ values alone predict.
+Scenario 3 shows one RBP pool that binds several RNAs.
+
+### Optional: RNA accessibility
+
+The `accessibility` matrix has one row per nucleotide. Column $l$ is the
+probability that the $l$ nucleotides that end at that row are all unpaired.
+This is the layout of the `*_lunp` file of `RNAplfold`, for example:
+
+```{bash, eval = FALSE}
+RNAplfold -W 150 -L 100 -u 7 < transcript.fa   # writes <name>_lunp
+```
+
+```{r scenario1-accessibility-file, eval = FALSE}
+acc <- readAccessibility("transcript_lunp")
+```
+
+Choose the folding settings (window, span, temperature) for your experiment.
+Here, a made-up matrix closes nucleotides 40 to 60 to show the effect. (The
+made-up values are products of per-nucleotide values. Real values from
+`RNAplfold` are not products, because neighboring nucleotides open and close
+together.)
+
+```{r scenario1-accessibility}
+L <- nchar(seq)
+p_open <- ifelse(seq_len(L) %in% 40:60, 0.01, 1)
+acc <- matrix(NA_real_, L, k_size)
+for (l in seq_len(k_size)) {
+  for (i in l:L) acc[i, l] <- prod(p_open[(i - l + 1):i])
+}
+res_acc <- simulateBinding(seq, rbp_models, prot_concs, rna_conc = rna_conc,
+                           k = k_size, accessibility = acc)
+# Mean HH occupancy inside and outside the closed region
+c(closed = mean(res_acc$HH[40:60]), open = mean(res_acc$HH[-(40:60)]))
+```
+
 ## Visualization
 
 Each metric calculated using `simulateBinding()` can be visualized with built-in 
@@ -450,7 +506,9 @@ Grid sweep results can also be exported in JSON/CSV or SummarizedExperiment form
 
 To simulate RBP binding to multiple RNA sequences (e.g., transcript sequences 
 from bioMart), RBPEqBind provides functions to load FASTA files directly. By
-default, each sequence is simulated alone, with the full protein supply.
+default, each sequence is simulated alone, with the full protein amount.
+The FASTA file is read as DNA (T is changed to U). For a file that holds U,
+set `seq_type = "RNA"`.
 
 ```{r scenario3-simulate}
 # Load sample FASTA from package
@@ -468,21 +526,24 @@ head(res_fasta)
 
 Visualization and result export are performed the same way as in Scenario 1.
 
-## One shared protein supply
+## One RBP pool for several RNAs
 
 In an experiment that titrates protein into a mix of RNAs, all RNAs take
-protein from the same supply. Set `shared_supply = TRUE` to model this. The
+protein from the same pool. Set `shared_protein = TRUE` to model this. The
 model then solves one mass balance over all sequences, and every sequence
 sees the same free protein level. Each sequence keeps its own windows or
-lattice. `rna_conc` can be one value for all sequences or one value per
-sequence.
+lattice. Use this option when you model one protein pool that binds several
+different RNAs. In `simulateBindingFasta()`, `rna_conc` can be one value for
+all sequences or one value per sequence (named with the sequence names, or
+in file order). In `simulateGridFasta()`, each value of `rna_conc_grid`
+applies to every sequence.
 
 ```{r scenario3-shared}
 res_alone <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 20),
                                   rna_conc = 2, k = 5, footprint = 7)
 res_shared <- simulateBindingFasta(fasta_file, rbp_models, c(HH = 20),
                                    rna_conc = 2, k = 5, footprint = 7,
-                                   shared_supply = TRUE)
+                                   shared_protein = TRUE)
 # Mean occupancy of each transcript, alone and in the shared tube
 merge(res_alone[, .(alone = mean(HH)), by = transcript],
       res_shared[, .(shared = mean(HH)), by = transcript], by = "transcript")

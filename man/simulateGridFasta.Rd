@@ -11,8 +11,9 @@ simulateGridFasta(
   rna_conc_grid,
   k = 5,
   footprint = NULL,
-  omega = 1,
-  shared_supply = FALSE
+  shared_protein = FALSE,
+  accessibility = NULL,
+  seq_type = c("DNA", "RNA")
 )
 }
 \arguments{
@@ -30,10 +31,17 @@ value applies to every sequence.}
 \item{footprint}{\code{NULL} (default) or footprint sizes; see
 \code{\link{simulateBinding}}.}
 
-\item{omega}{Neighbor factor (default 1); see \code{\link{simulateBinding}}.}
-
-\item{shared_supply}{If \code{TRUE}, all sequences draw on one supply of
+\item{shared_protein}{If \code{TRUE}, all sequences draw on one pool of
 each protein. If \code{FALSE} (default), each sequence is simulated alone.}
+
+\item{accessibility}{\code{NULL} (default) or a list with one
+accessibility matrix per sequence, named with the sequence names (the
+FASTA headers); see \code{\link{simulateBinding}}.}
+
+\item{seq_type}{Alphabet of the FASTA file: \code{"DNA"} (default; T is
+changed to U after reading) or \code{"RNA"} (the file holds U). A letter
+that does not belong to the chosen alphabet (for example U in a DNA file)
+stops the function with an error.}
 }
 \value{
 A data.table with combined results, including a transcript column.
@@ -43,9 +51,9 @@ Simulates competitive binding for all sequences in one or more FASTA files acros
 Concurrency is controlled by the user's active \code{\link[future]{plan}} (default is sequential).
 }
 \details{
-With \code{shared_supply = TRUE}, each grid point puts all sequences in
+With \code{shared_protein = TRUE}, each grid point puts all sequences in
 one tube, each at the RNA concentration of that grid point, and they draw
-on one supply of each protein (see \code{\link{simulateBindingFasta}}).
+on one pool of each protein (see \code{\link{simulateBindingFasta}}).
 The work is then split over grid points instead of sequences.
 }
 \examples{

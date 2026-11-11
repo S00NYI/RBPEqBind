@@ -1,6 +1,6 @@
 # Shared Protein Pool Solver
 #
-# Solves the protein mass balance when all binding sites draw on one supply of
+# Solves the protein mass balance when all binding sites draw on one pool of
 # each protein. Sites bind independently of each other (no footprint).
 #
 # For free protein levels f_j, the fraction of site i bound by protein j is
