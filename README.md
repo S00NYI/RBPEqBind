@@ -23,11 +23,12 @@ BiocManager::install("RBPEqBind")
 
 ### From GitHub
 
+<!-- Change "S00NYI/RBPEqBind@dev-v2" to "S00NYI/RBPEqBind" when dev-v2 is merged into main. -->
 ```r
 if (!requireNamespace("pak", quietly = TRUE))
     install.packages("pak")
 
-pak::pak("S00NYI/RBPEqBind")
+pak::pak("S00NYI/RBPEqBind@dev-v2")
 ```
 
 ## Quick Start
