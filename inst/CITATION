@@ -1,7 +1,7 @@
 citHeader("To cite package 'RBPEqBind' in publications use:")
 
 bibentry(bibtype = "Article",
-  title        = "Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding",
+  title        = "Inherent specificity and variation sensitivity as quantitative metrics for RNA binding proteins",
   author       = c(
     as.person("Soon Yi"),
     as.person("Shashi S. Singh"),
@@ -11,8 +11,8 @@ bibentry(bibtype = "Article",
     as.person("Eckhard Jankowsky"),
     as.person("Joseph M. Luna")
   ),
-  year         = "2025",
-  journal      = "bioRxiv",
-  doi          = "10.1101/2025.03.28.646018v4",
-  textVersion  = "Soon Yi, Shashi S. Singh, Xuan Ye, Rohan Krishna, Vidusha Kothwela, Eckhard Jankowsky, Joseph M. Luna (2025). Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding. bioRxiv. doi:10.1101/2025.03.28.646018v4"
+  year         = "2026",
+  journal      = "Genome Biology",
+  doi          = "10.1186/s13059-026-04352-z",
+  textVersion  = "Soon Yi, Shashi S. Singh, Xuan Ye, Rohan Krishna, Vidusha Kothwela, Eckhard Jankowsky, Joseph M. Luna (2026). Inherent specificity and variation sensitivity as quantitative metrics for RNA binding proteins. Genome Biology. doi:10.1186/s13059-026-04352-z"
 )

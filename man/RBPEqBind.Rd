@@ -37,9 +37,9 @@ see \url{https://github.com/S00NYI/Specificity_BITs}.
 }
 
 \references{
-Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2025).
-Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.
-bioRxiv. \url{https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4}
+Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2026).
+Inherent specificity and variation sensitivity as quantitative metrics for RNA binding proteins.
+Genome Biology. \doi{10.1186/s13059-026-04352-z}
 }
 \seealso{
 Useful links:

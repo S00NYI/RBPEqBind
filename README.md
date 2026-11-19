@@ -80,9 +80,9 @@ For detailed usage, see Figure_Scripts folder in: https://github.com/S00NYI/BITS
 
 If you use RBPEqBind in your research, please cite:
 
-> Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2025). 
-> *Inherent Specificity and Mutational Sensitivity as Quantitative Metrics for RBP Binding.* 
-> bioRxiv. https://www.biorxiv.org/content/10.1101/2025.03.28.646018v4
+> Yi S, Singh SS, Ye X, Krishna R, Kothwela V, Jankowsky E, Luna JM. (2026). 
+> *Inherent specificity and variation sensitivity as quantitative metrics for RNA binding proteins.* 
+> Genome Biology. https://doi.org/10.1186/s13059-026-04352-z
 
 \* The simulation results in this manuscript were made with RBPEqBind 0.99.0. Later versions give numerically different results, but with the default settings the conclusions of those simulations do not change.
 

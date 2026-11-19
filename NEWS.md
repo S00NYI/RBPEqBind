@@ -83,6 +83,9 @@
   columns for quantitative analysis, and two runs (with and without a
   competitor) to measure a competitor's effect. The output itself does not
   change.
+- `citation("RBPEqBind")`, the package help page, the README and the vignette
+  now cite the published article in Genome Biology
+  (doi:10.1186/s13059-026-04352-z) instead of the bioRxiv preprint.
 
 ## Version 0.99.4
 

@@ -19,8 +19,9 @@
 #
 # Generation:
 #   Generated synthetically using the model generation routines described in:
-#   Yi S, et al. (2025). Inherent Specificity and Mutational Sensitivity as 
-#   Quantitative Metrics for RBP Binding. bioRxiv 10.1101/2025.03.28.646018.
+#   Yi S, et al. (2026). Inherent specificity and variation sensitivity as
+#   quantitative metrics for RNA binding proteins. Genome Biology.
+#   doi:10.1186/s13059-026-04352-z
 #
 # 2. test_transcripts.fa
 # ----------------------
